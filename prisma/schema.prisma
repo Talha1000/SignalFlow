@@ -1,0 +1,497 @@
+// SignalFlow Multi-Tenant Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  SALES_REP
+  VIEWER
+}
+
+enum Plan {
+  FREE
+  STARTER
+  GROWTH
+  BUSINESS
+  ENTERPRISE
+}
+
+enum LeadStage {
+  NEW
+  CONTACTED
+  ENGAGED
+  QUALIFIED
+  MEETING
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum IntentLevel {
+  COLD
+  LOW
+  WARM
+  HIGH
+  HOT
+}
+
+enum ActivityType {
+  PAGE_VIEW
+  PRICING_VISIT
+  DEMO_VISIT
+  DOCS_VIEW
+  EMAIL_OPEN
+  EMAIL_CLICK
+  EMAIL_REPLY
+  NOTE
+  CALL
+  STAGE_CHANGE
+  SCORE_CHANGE
+}
+
+enum SequenceStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED_REPLIED
+  CANCELLED
+}
+
+model User {
+  id           String            @id @default(cuid())
+  email        String            @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  memberships  WorkspaceMember[]
+  notifications Notification[]
+  auditLogs    AuditLog[]
+  assignedLeads Lead[]           @relation("LeadOwner")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model Workspace {
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  domain             String?
+  plan               Plan               @default(STARTER)
+  scoringThresholds  Json?
+  settings           Json?
+  members            WorkspaceMember[]
+  companies          Company[]
+  contacts           Contact[]
+  leads              Lead[]
+  leadScores         LeadScore[]
+  scoreEvents        ScoreEvent[]
+  activities         Activity[]
+  sequences          Sequence[]
+  enrollments        SequenceEnrollment[]
+  automations        Automation[]
+  automationExecs    AutomationExecution[]
+  pipelineStages     PipelineStage[]
+  tags               Tag[]
+  apiKeys            ApiKey[]
+  webhooks           Webhook[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  subscription       Subscription?
+  usage              UsageRecord?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        Role      @default(SALES_REP)
+  joinedAt    DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model Company {
+  id            String     @id @default(cuid())
+  workspaceId   String
+  name          String
+  domain        String?
+  industry      String?
+  size          String?    // e.g. "50-200", "500-1000"
+  annualRevenue String?    // e.g. "$10M-$50M"
+  location      String?
+  techStack     String[]
+  intentScore   Int        @default(0)
+  aiSummary     String?
+  contacts      Contact[]
+  leads         Lead[]
+  activities    Activity[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([domain])
+}
+
+model Contact {
+  id          String     @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  title       String?
+  department  String?
+  linkedinUrl String?
+  leads       Lead[]
+  activities  Activity[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company     Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([email])
+}
+
+model Lead {
+  id              String            @id @default(cuid())
+  workspaceId     String
+  companyId       String?
+  contactId       String?
+  ownerId         String?
+  stage           LeadStage         @default(NEW)
+  dealValue       Float             @default(0)
+  score           Int               @default(0)
+  intentLevel     IntentLevel       @default(COLD)
+  status          String            @default("ACTIVE")
+  source          String            @default("WEBSITE")
+  lastActivityAt  DateTime          @default(now())
+  nextAction      String?
+  nextActionDue   DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company         Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contact         Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  owner           User?             @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  leadScore       LeadScore?
+  scoreEvents     ScoreEvent[]
+  activities      Activity[]
+  enrollments     SequenceEnrollment[]
+  executions      AutomationExecution[]
+  tags            LeadTag[]
+
+  @@index([workspaceId])
+  @@index([score])
+  @@index([stage])
+  @@index([ownerId])
+  @@index([lastActivityAt])
+}
+
+model LeadScore {
+  id               String      @id @default(cuid())
+  workspaceId      String
+  leadId           String      @unique
+  currentScore     Int         @default(0)
+  intentLevel      IntentLevel @default(COLD)
+  positiveFactors  Json        @default("[]")
+  negativeFactors  Json        @default("[]")
+  delta7d          Int         @default(0)
+  explanation      String?
+  confidence       Float       @default(0.85)
+  lastCalculatedAt DateTime    @default(now())
+
+  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead             Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([currentScore])
+}
+
+model ScoreEvent {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  leadId        String
+  previousScore Int
+  newScore      Int
+  delta         Int
+  factorName    String
+  reason        String
+  createdAt     DateTime  @default(now())
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead          Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  workspaceId String
+  leadId      String?
+  companyId   String?
+  contactId   String?
+  type        ActivityType
+  title       String
+  description String?
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contact     Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model Sequence {
+  id            String              @id @default(cuid())
+  workspaceId   String
+  name          String
+  description   String?
+  status        SequenceStatus      @default(ACTIVE)
+  triggerType   String              @default("MANUAL")
+  enrolledCount Int                 @default(0)
+  openRate      Float               @default(0)
+  clickRate     Float               @default(0)
+  replyRate     Float               @default(0)
+  steps         SequenceStep[]
+  enrollments   SequenceEnrollment[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model SequenceStep {
+  id                String    @id @default(cuid())
+  sequenceId        String
+  stepOrder         Int
+  delayDays         Int       @default(0)
+  stepType          String    @default("EMAIL") // EMAIL | WAIT | TASK
+  subject           String?
+  body              String
+  templateVariables Json?
+
+  sequence          Sequence  @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@index([sequenceId])
+}
+
+model SequenceEnrollment {
+  id                 String           @id @default(cuid())
+  workspaceId        String
+  sequenceId         String
+  leadId             String
+  currentStep        Int              @default(0)
+  status             EnrollmentStatus @default(ACTIVE)
+  enrolledAt         DateTime         @default(now())
+  lastStepExecutedAt DateTime?
+
+  workspace          Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sequence           Sequence         @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  lead               Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([sequenceId, leadId])
+  @@index([workspaceId])
+  @@index([leadId])
+}
+
+model Automation {
+  id             String                @id @default(cuid())
+  workspaceId    String
+  name           String
+  description    String?
+  status         SequenceStatus        @default(ACTIVE)
+  triggerType    String                @default("SCORE_THRESHOLD")
+  nodes          Json                  // Graph nodes
+  edges          Json                  // Graph connections
+  executionCount Int                   @default(0)
+  executions     AutomationExecution[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  workspace      Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model AutomationExecution {
+  id           String     @id @default(cuid())
+  workspaceId  String
+  automationId String
+  leadId       String?
+  status       String     @default("SUCCESS")
+  triggeredAt  DateTime   @default(now())
+  details      Json?
+
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  lead         Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([automationId])
+}
+
+model PipelineStage {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  name           String
+  stageKey       String
+  order          Int
+  winProbability Float     @default(0.2)
+  color          String    @default("#06b6d4")
+
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, stageKey])
+  @@index([workspaceId])
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String    @default("#64748b")
+  leads       LeadTag[]
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model LeadTag {
+  leadId String
+  tagId  String
+
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  keyPrefix   String
+  keyHash     String
+  permissions Json      @default("[\"read\", \"write\"]")
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model Webhook {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  url         String
+  secret      String
+  eventTypes  Json      @default("[\"lead.created\", \"lead.score_changed\"]")
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String?
+  title       String
+  message     String
+  type        String    @default("ALERT") // LEAD_HOT | SCORE_CHANGE | SEQUENCE_COMPLETE | IMPORT_DONE
+  link        String?
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([read])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  details     Json?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([createdAt])
+}
+
+model Subscription {
+  id                 String    @id @default(cuid())
+  workspaceId        String    @unique
+  plan               Plan      @default(STARTER)
+  status             String    @default("ACTIVE")
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime?
+
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model UsageRecord {
+  id               String    @id @default(cuid())
+  workspaceId      String    @unique
+  leadsCount       Int       @default(0)
+  aiCreditsUsed    Int       @default(0)
+  emailsSentCount  Int       @default(0)
+  teamMembersCount Int       @default(1)
+  updatedAt        DateTime  @updatedAt
+
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
