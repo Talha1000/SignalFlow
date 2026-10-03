@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Sparkles,
@@ -27,7 +27,11 @@ export default function LandingPage() {
       <div className="pointer-events-none absolute top-96 left-1/4 h-[400px] w-[500px] rounded-full bg-indigo-600/10 blur-[120px]" />
 
       {/* Hero Section */}
-      <section className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center pt-12 pb-16">
+      <motion.section
+      className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center pt-12 pb-16"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}>
         {/* Subtle pill badge */}
         <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1 text-xs font-medium text-cyan-400 mb-8 backdrop-blur-sm shadow-sm">
           <Sparkles className="h-3.5 w-3.5 animate-pulse" />
@@ -147,7 +151,11 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1 */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 space-y-4 hover:border-cyan-500/40 transition-colors">
+          <motion.div
+        className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 space-y-4 hover:border-cyan-500/40 transition-colors"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Target className="h-5 w-5" />
             </div>

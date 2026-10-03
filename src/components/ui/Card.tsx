@@ -1,5 +1,5 @@
 import React from "react";
-import { clsx } from "clsx";
+import { motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
 
 export function Card({
@@ -9,7 +9,10 @@ export function Card({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { glass?: boolean }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className={twMerge(
         clsx(
           "rounded-xl border transition-all duration-200",
@@ -22,7 +25,7 @@ export function Card({
       {...props}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
