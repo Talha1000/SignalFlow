@@ -260,7 +260,7 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     hotMin: 85,
   };
 
-  let intentLevel = IntentLevel.COLD;
+  let intentLevel: IntentLevel = IntentLevel.COLD;
   if (finalScore >= thresholds.hotMin) {
     intentLevel = IntentLevel.HOT;
   } else if (finalScore >= thresholds.warmMax + 1) {

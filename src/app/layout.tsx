@@ -1,6 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { ThemeProvider } from "../components/theme/ThemeProvider";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

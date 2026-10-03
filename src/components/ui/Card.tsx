@@ -1,13 +1,14 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
+import clsx from "clsx";
 
 export function Card({
   className,
   children,
   glass = false,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> & { glass?: boolean }) {
+}: React.ComponentPropsWithoutRef<typeof motion.div> & { glass?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
