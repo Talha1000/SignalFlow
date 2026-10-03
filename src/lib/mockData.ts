@@ -536,117 +536,162 @@ export const MOCK_SEQUENCES = [
   },
 ];
 
+let dbAvailable: boolean | null = null;
+let lastDbCheck = 0;
+
+async function isDatabaseReachable(): Promise<boolean> {
+  const now = Date.now();
+  if (dbAvailable !== null && now - lastDbCheck < 60000) {
+    return dbAvailable;
+  }
+  try {
+    const probe = prisma.$queryRaw`SELECT 1`;
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("DB_PROBE_TIMEOUT")), 150)
+    );
+    await Promise.race([probe, timeout]);
+    dbAvailable = true;
+    lastDbCheck = now;
+    return true;
+  } catch {
+    dbAvailable = false;
+    lastDbCheck = now;
+    return false;
+  }
+}
+
 /** Safe database getter helpers that fall back cleanly when Postgres is not connected */
 export async function getLeadsSafe() {
-  try {
-    const leads = await prisma.lead.findMany({
-      orderBy: { score: "desc" },
-      include: {
-        company: true,
-        contact: true,
-        owner: true,
-        leadScore: true,
-        activities: { take: 5, orderBy: { createdAt: "desc" } },
-      },
-    });
-    if (leads && leads.length > 0) return leads;
-  } catch (e) {
-    // Database connection failed, gracefully use mock leads
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const leads = await prisma.lead.findMany({
+        orderBy: { score: "desc" },
+        include: {
+          company: true,
+          contact: true,
+          owner: true,
+          leadScore: true,
+          activities: { take: 5, orderBy: { createdAt: "desc" } },
+        },
+      });
+      if (leads && leads.length > 0) return leads;
+    } catch (e) {
+      // fallback
+    }
   }
   return MOCK_LEADS;
 }
 
 export async function getLeadByIdSafe(id: string) {
-  try {
-    const lead = await prisma.lead.findUnique({
-      where: { id },
-      include: {
-        company: { include: { contacts: true } },
-        contact: true,
-        owner: true,
-        leadScore: true,
-        scoreEvents: { orderBy: { createdAt: "desc" } },
-        activities: { orderBy: { createdAt: "desc" } },
-        enrollments: { include: { sequence: true } },
-        tags: { include: { tag: true } },
-      },
-    });
-    if (lead) return lead;
-  } catch (e) {
-    // fallback
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const lead = await prisma.lead.findUnique({
+        where: { id },
+        include: {
+          company: { include: { contacts: true } },
+          contact: true,
+          owner: true,
+          leadScore: true,
+          scoreEvents: { orderBy: { createdAt: "desc" } },
+          activities: { orderBy: { createdAt: "desc" } },
+          enrollments: { include: { sequence: true } },
+          tags: { include: { tag: true } },
+        },
+      });
+      if (lead) return lead;
+    } catch (e) {
+      // fallback
+    }
   }
   const matched = MOCK_LEADS.find((l) => l.id === id);
   return matched || MOCK_LEADS[0];
 }
 
 export async function getCompaniesSafe() {
-  try {
-    const companies = await prisma.company.findMany({
-      include: { leads: true, contacts: true },
-      orderBy: { name: "asc" },
-    });
-    if (companies && companies.length > 0) return companies;
-  } catch (e) {
-    // fallback
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const companies = await prisma.company.findMany({
+        include: { leads: true, contacts: true },
+        orderBy: { name: "asc" },
+      });
+      if (companies && companies.length > 0) return companies;
+    } catch (e) {
+      // fallback
+    }
   }
   return MOCK_COMPANIES;
 }
 
 export async function getCompanyByIdSafe(id: string) {
-  try {
-    const company = await prisma.company.findUnique({
-      where: { id },
-      include: {
-        contacts: true,
-        leads: { include: { contact: true, owner: true } },
-        activities: { orderBy: { createdAt: "desc" }, take: 10 },
-      },
-    });
-    if (company) return company;
-  } catch (e) {
-    // fallback
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const company = await prisma.company.findUnique({
+        where: { id },
+        include: {
+          contacts: true,
+          leads: { include: { contact: true, owner: true } },
+          activities: { orderBy: { createdAt: "desc" }, take: 10 },
+        },
+      });
+      if (company) return company;
+    } catch (e) {
+      // fallback
+    }
   }
   const matched = MOCK_COMPANIES.find((c) => c.id === id);
   return matched || MOCK_COMPANIES[0];
 }
 
 export async function getContactsSafe() {
-  try {
-    const contacts = await prisma.contact.findMany({
-      include: { company: true },
-      orderBy: { firstName: "asc" },
-    });
-    if (contacts && contacts.length > 0) return contacts;
-  } catch (e) {
-    // fallback
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const contacts = await prisma.contact.findMany({
+        include: { company: true },
+        orderBy: { firstName: "asc" },
+      });
+      if (contacts && contacts.length > 0) return contacts;
+    } catch (e) {
+      // fallback
+    }
   }
   return MOCK_CONTACTS;
 }
 
 export async function getAutomationsSafe() {
-  try {
-    const automations = await prisma.automation.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    if (automations && automations.length > 0) return automations;
-  } catch (e) {
-    // fallback
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const automations = await prisma.automation.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+      if (automations && automations.length > 0) return automations;
+    } catch (e) {
+      // fallback
+    }
   }
   return MOCK_AUTOMATIONS;
 }
 
 export async function getSequencesSafe() {
-  try {
-    const sequences = await prisma.sequence.findMany({
-      include: {
-        steps: { orderBy: { stepOrder: "asc" } },
-        enrollments: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    if (sequences && sequences.length > 0) return sequences;
-  } catch (e) {
-    // fallback
+  const dbOk = await isDatabaseReachable();
+  if (dbOk) {
+    try {
+      const sequences = await prisma.sequence.findMany({
+        include: {
+          steps: { orderBy: { stepOrder: "asc" } },
+          enrollments: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (sequences && sequences.length > 0) return sequences;
+    } catch (e) {
+      // fallback
+    }
   }
   return MOCK_SEQUENCES;
 }
