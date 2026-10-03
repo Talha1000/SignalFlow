@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getCompanyByIdSafe } from "@/lib/mockData";
 import {
   Building,
   Users,
@@ -25,27 +25,11 @@ export default async function CompanyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-
-  const company = await prisma.company.findUnique({
-    where: { id },
-    include: {
-      contacts: true,
-      leads: {
-        include: {
-          contact: true,
-          owner: true,
-        },
-      },
-      activities: {
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      },
-    },
-  });
+  const company = await getCompanyByIdSafe(id);
 
   if (!company) notFound();
 
-  const totalPipeline = company.leads.reduce((sum, l) => sum + (l.dealValue || 0), 0);
+  const totalPipeline = (company.leads || []).reduce((sum: number, l: any) => sum + (l.dealValue || 0), 0);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -113,17 +97,17 @@ export default async function CompanyDetailPage({
             </div>
 
             <div className="divide-y divide-slate-800 text-xs">
-              {company.contacts.map((c) => (
+              {(company.contacts || []).map((c: any) => (
                 <div key={c.id} className="py-3 flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-white">
-                      {c.firstName} {c.lastName}
+                      {c.firstName ? `${c.firstName} ${c.lastName || ""}` : (c.name || "Contact")}
                     </div>
                     <div className="text-[11px] text-slate-400">
                       {c.title} • <span className="font-mono">{c.email}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-500">{c.department}</span>
+                  <span className="text-[10px] font-mono text-slate-500">{c.department || "Operations"}</span>
                 </div>
               ))}
             </div>
@@ -191,11 +175,11 @@ export default async function CompanyDetailPage({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Location:</span>
-                <span>{company.location}</span>
+                <span>{(company as any).location || `${(company as any).city || ""}, ${(company as any).country || ""}` || "United States"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Revenue:</span>
-                <span className="font-mono text-emerald-400">{company.annualRevenue}</span>
+                <span className="font-mono text-emerald-400">{(company as any).annualRevenue || "$50M+"}</span>
               </div>
             </div>
           </div>
@@ -205,7 +189,7 @@ export default async function CompanyDetailPage({
               Detected Tech Stack
             </h4>
             <div className="flex flex-wrap gap-1.5">
-              {(company.techStack || []).map((t) => (
+              {((company as any).techStack || []).map((t: string) => (
                 <span
                   key={t}
                   className="px-2 py-0.5 rounded bg-slate-950 text-cyan-300 border border-slate-800 font-mono text-xs"

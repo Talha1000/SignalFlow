@@ -1,16 +1,55 @@
-import Link from "next/link";
+import React from "react";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { InteractiveRoiCalculator } from "@/components/landing/InteractiveRoiCalculator";
+import { BentoGridSection } from "@/components/landing/BentoGridSection";
+import { WorkflowTabsSection } from "@/components/landing/WorkflowTabsSection";
+import { SocialProofSection } from "@/components/landing/SocialProofSection";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { FaqSection } from "@/components/landing/FaqSection";
+import { FinalCtaSection } from "@/components/landing/FinalCtaSection";
+
+export const metadata = {
+  title: "SignalFlow – Autonomous Revenue Intelligence & AI Sales Enablement",
+  description:
+    "Turn silent buyer signals into closed enterprise pipeline with explainable AI lead scoring, telemetry ingestion, and autonomous cadences.",
+};
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="text-3xl font-bold mb-4">Welcome to SignalFlow</h1>
-      <p className="mb-6">Your AI‑powered sales enablement platform.</p>
-      <Link
-        href="/app/dashboard"
-        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition"
-      >
-        Go to Dashboard
-      </Link>
-    </main>
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
+      {/* Top Futuristic Navigation */}
+      <Navbar />
+
+      <main className="flex-1">
+        {/* 1. Hero Section with Live Telemetry Simulator & Social Proof */}
+        <HeroSection />
+
+        {/* 2. Interactive Revenue Lift & ROI Modeler */}
+        <InteractiveRoiCalculator />
+
+        {/* 3. 2027 Bento Grid: Telemetry, Radar, Scoring, Auto-Stop Cadences, Security */}
+        <BentoGridSection />
+
+        {/* 4. Interactive 3-Step Live Pipeline Walkthrough */}
+        <WorkflowTabsSection />
+
+        {/* 5. Executive Social Proof & Verified Testimonials */}
+        <SocialProofSection />
+
+        {/* 6. Transparent Interactive Pricing (Monthly / Annual) */}
+        <PricingSection />
+
+        {/* 7. Comprehensive Interactive FAQs */}
+        <FaqSection />
+
+        {/* 8. Grand Cyber-Portal Final Call to Action */}
+        <FinalCtaSection />
+      </main>
+
+      {/* Comprehensive System Footer */}
+      <Footer />
+    </div>
   );
 }

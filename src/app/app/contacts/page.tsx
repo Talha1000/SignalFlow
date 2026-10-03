@@ -1,19 +1,13 @@
 import React from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getContactsSafe } from "@/lib/mockData";
 import { Users, Mail, Phone, Building, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContactsPage() {
-  const contacts = await prisma.contact.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      company: true,
-      leads: true,
-    },
-  });
+  const contacts = await getContactsSafe();
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -42,15 +36,15 @@ export default async function ContactsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/80">
-            {contacts.map((c) => (
+            {contacts.map((c: any) => (
               <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
                 <td className="p-3.5 font-bold text-white">
-                  {c.firstName} {c.lastName}
+                  {c.firstName ? `${c.firstName} ${c.lastName || ""}` : (c.name || "Contact")}
                 </td>
                 <td className="p-3.5 text-slate-300">{c.title || "Decision Maker"}</td>
                 <td className="p-3.5">
                   <Link
-                    href={c.company ? `/app/companies/${c.company.id}` : "#"}
+                    href={c.company ? `/app/companies/${c.company.id || c.companyId}` : "#"}
                     className="font-medium text-cyan-400 hover:underline"
                   >
                     {c.company?.name || "Direct"}
@@ -59,7 +53,7 @@ export default async function ContactsPage() {
                 <td className="p-3.5 font-mono text-slate-400">{c.email}</td>
                 <td className="p-3.5 text-slate-400">{c.department || "Operations"}</td>
                 <td className="p-3.5 text-right">
-                  {c.leads.length > 0 ? (
+                  {c.leads && c.leads.length > 0 ? (
                     <Link
                       href={`/app/leads/${c.leads[0].id}`}
                       className="text-cyan-400 hover:underline text-xs"

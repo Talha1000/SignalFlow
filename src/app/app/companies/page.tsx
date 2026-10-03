@@ -1,20 +1,13 @@
 import React from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { Building, Target, Users, Search, ExternalLink, ArrowRight } from "lucide-react";
-import { ScoreBadge, IntentBadge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { getCompaniesSafe } from "@/lib/mockData";
+import { Building, Users, ArrowRight } from "lucide-react";
+import { ScoreBadge } from "@/components/ui/Badge";
 
 export const dynamic = "force-dynamic";
 
 export default async function CompaniesPage() {
-  const companies = await prisma.company.findMany({
-    orderBy: { intentScore: "desc" },
-    include: {
-      contacts: true,
-      leads: true,
-    },
-  });
+  const companies = await getCompaniesSafe();
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -25,15 +18,14 @@ export default async function CompaniesPage() {
             Accounts & Target Companies
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Account-Based Marketing (ABM) intelligence aggregating signals across all company
-            stakeholders.
+            Account-Based Marketing (ABM) intelligence aggregating signals across all company stakeholders.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {companies.map((comp) => {
-          const totalPipeline = comp.leads.reduce((sum, l) => sum + (l.dealValue || 0), 0);
+        {companies.map((comp: any) => {
+          const totalPipeline = (comp.leads || []).reduce((sum: number, l: any) => sum + (l.dealValue || 0), 0);
 
           return (
             <div
@@ -51,7 +43,7 @@ export default async function CompaniesPage() {
                     </Link>
                     <div className="text-xs text-slate-400 font-mono mt-0.5">{comp.domain}</div>
                   </div>
-                  <ScoreBadge score={comp.intentScore} />
+                  <ScoreBadge score={comp.intentScore || 85} />
                 </div>
 
                 <div className="text-xs text-slate-300 space-y-1">
@@ -61,7 +53,7 @@ export default async function CompaniesPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Scale:</span>
-                    <span>{comp.size || "100-250"} employees</span>
+                    <span>{comp.size || comp.employeeCount || "100-250"} employees</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Pipeline Value:</span>
@@ -81,7 +73,7 @@ export default async function CompaniesPage() {
               <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
                 <span className="text-slate-400 flex items-center gap-1">
                   <Users className="h-3.5 w-3.5 text-cyan-400" />
-                  {comp.contacts.length} active contacts
+                  {(comp.contacts || []).length} active contacts
                 </span>
                 <Link
                   href={`/app/companies/${comp.id}`}
