@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "src": "src",
   "builds": [
     {
       "src": "next.config.js",
