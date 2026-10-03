@@ -14,6 +14,7 @@ export function Navbar() {
 
   const navLinks = [
     { label: "Features", href: "/features" },
+    { label: "Live Dashboard", href: "/app/dashboard" },
     { label: "Pricing", href: "/pricing" },
     { label: "Security", href: "/security" },
     { label: "About", href: "/about" },
@@ -38,7 +39,7 @@ export function Navbar() {
             <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
               SignalFlow
               <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                2026
+                2027
               </span>
             </span>
           </div>
