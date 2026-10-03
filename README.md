@@ -114,3 +114,20 @@ src/
 ## License
 
 MIT
+
+## Deploying to Vercel (Free Tier)
+
+1. **Create a free PostgreSQL database** (Supabase, Neon, Railway, etc.) and obtain its connection string, e.g.:
+   ```
+   postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public
+   ```
+2. **Add the secret to Vercel**:
+   - Go to **Vercel Dashboard → Settings → Environment Variables**.
+   - Add a new secret named **`database_url`** with the connection string.
+   - Vercel will expose it as `DATABASE_URL` for the app (as defined in `vercel.json`).
+3. **Deploy**:
+   - Link the GitHub repository to Vercel (if not already linked).
+   - Click **Deploy** or push a new commit to trigger a build.
+   - The app will start with the database connection automatically configured.
+
+> **Note:** The local `.env` file is only for local development. Do **not** commit actual credentials.
