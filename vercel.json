@@ -1,24 +1,8 @@
 {
   "version": 2,
-
-  "builds": [
-    {
-      "src": "next.config.js",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [],
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://pqcxpvdidufelhdfrimy.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_UbSrcn4XnwcdUiFYpvmhvw_56BQgjud"
-  },
-  "build": {
-    "env": {
-      "SUPABASE_URL": "${SUPABASE_URL}",
-      "SUPABASE_SECRET_KEY": "${SUPABASE_SECRET_KEY}",
-      "SUPABASE_JWKS_URL": "${SUPABASE_JWKS_URL}",
-      "DATABASE_URL": "${DATABASE_URL}",
-      "DIRECT_URL": "${DIRECT_URL}"
-    }
-  }
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "outputDirectory": ".next",
+  "ignoreCommand": "git diff --quiet HEAD~1 HEAD -- . && echo 'No changes'",
+  "framework": null
 }
