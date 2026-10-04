@@ -222,7 +222,7 @@ Return strictly JSON with keys "subject" and "body". Do not use markdown backtic
       },
       technical: {
         subject: `SignalFlow telemetry and API integration for ${sanitizedCompany}`,
-        body: `Hi ${sanitizedFirst},\n\nFollowing up on ${contextSignal} from ${sanitizedCompany}.\n\nOur platform ingests web, documentation, and product telemetry to calculate deterministic account intent scores in real time.\n\nWould you be open to a quick technical briefing on our ingestion pipeline and webhook options?\n\nBest,\nSignalFlow Solutions Architecture`,
+        body: `Hi ${sanitizedFirst},\n\nFollowing up on ${contextSignal} from ${sanitizedCompany}.\n\nOur platform captures inbound website, documentation, and product telemetry to prioritize leads with explainable scoring factor attribution in real time.\n\nWould you be open to a quick technical briefing on our ingestion pipeline and webhook options?\n\nBest,\nSignalFlow Solutions Architecture`,
       },
     };
 

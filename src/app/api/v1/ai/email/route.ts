@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { aiService } from "@/lib/ai/provider";
 import { checkPlanQuota } from "@/lib/billing/usage";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,18 @@ export async function POST(request: Request) {
 
     if (caller.isApiKey && !caller.permissions?.includes("write")) {
       return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+    }
+
+    // Rate limiting: 20 AI email generations per minute per workspace
+    const clientIp = getClientIp(request);
+    const rateLimitKey = `ai_email:${caller.workspaceId}:${caller.userId || caller.apiKeyId || clientIp}`;
+    const rateLimit = checkRateLimit(rateLimitKey, { limit: 20, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return apiError(
+        `AI generation rate limit reached. Reset in ${Math.ceil(rateLimit.resetMs / 1000)}s`,
+        429,
+        "RATE_LIMIT_EXCEEDED"
+      );
     }
 
     const { leadId, tone = "consultative", customInstructions } = await request.json();
@@ -53,10 +66,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolvedTitle =
+      lead.contact?.title ||
+      (lead.company?.name ? `Leader at ${lead.company.name}` : "Decision Maker");
+
     const leadContext = {
       firstName: lead.contact?.firstName || "there",
       lastName: lead.contact?.lastName || "",
-      title: lead.contact?.title || lead.company?.name ? "Leader at " + lead.company?.name : "Decision Maker",
+      title: resolvedTitle,
       companyName: lead.company?.name || "your company",
       industry: lead.company?.industry || "Enterprise B2B",
       score: lead.score,
@@ -71,16 +88,21 @@ export async function POST(request: Request) {
 
     const email = await aiService.generatePersonalizedEmail(leadContext, tone, customInstructions);
 
-    // Track usage
+    // Track usage with truthful count initialization
+    const [actualLeadsCount, actualMembersCount] = await Promise.all([
+      prisma.lead.count({ where: { workspaceId: caller.workspaceId, deletedAt: null } }),
+      prisma.workspaceMember.count({ where: { workspaceId: caller.workspaceId } }),
+    ]);
+
     await prisma.usageRecord.upsert({
       where: { workspaceId: caller.workspaceId },
       update: { aiCreditsUsed: { increment: 1 } },
       create: {
         workspaceId: caller.workspaceId,
-        leadsCount: 1,
+        leadsCount: actualLeadsCount,
         aiCreditsUsed: 1,
         emailsSentCount: 0,
-        teamMembersCount: 1,
+        teamMembersCount: Math.max(1, actualMembersCount),
       },
     });
 
@@ -90,4 +112,3 @@ export async function POST(request: Request) {
     return apiError("Failed to generate email", 500, "AI_EMAIL_ERROR", error.message);
   }
 }
-

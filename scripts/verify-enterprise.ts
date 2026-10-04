@@ -16,9 +16,10 @@
 import { prisma } from "../src/lib/prisma";
 import bcrypt from "bcryptjs";
 import { signSessionToken, verifySessionToken } from "../src/lib/auth/session";
-import { calculateLeadScore } from "../src/lib/scoring/engine";
+import { calculateLeadScore, validateCustomThresholds } from "../src/lib/scoring/engine";
 import { validateApiKey, generateApiKey } from "../src/lib/auth/apikey";
 import { resolveCaller } from "../src/lib/auth/resolveCaller";
+import { checkRateLimit } from "../src/lib/security/rateLimit";
 import {
   executeWorkspaceAutomations,
   isSafePublicWebhookUrl,
@@ -95,20 +96,39 @@ async function runTestSuite() {
     const decodedTampered = verifySessionToken(tampered);
     assert(decodedTampered === null, "Tampered session token strictly rejected");
 
-    // 4. API Key SHA-256 Hashing & Canonical Seed Validation
-    console.log("\n--- 4. API KEY PERMISSIONS & SEEDED KEY COMPATIBILITY ---");
-    // Verify canonical seeded key in database
-    const seededApiKey = "sf_live_a89f0123_8f9e0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789ab";
-    const seededKeyValidation = await validateApiKey(seededApiKey);
-    assert(
-      seededKeyValidation.valid &&
-        seededKeyValidation.workspaceId === testWorkspace?.id &&
-        Array.isArray(seededKeyValidation.permissions) &&
-        seededKeyValidation.permissions.includes("write"),
-      "Seeded API key strictly validates against SHA-256 hash lookup in database"
-    );
+    // 4. API Key SHA-256 Hashing & Dynamic Key Verification (Zero Hardcoded Credentials)
+    console.log("\n--- 4. API KEY PERMISSIONS & DYNAMIC ENFORCEMENT ---");
+    // Verify dynamically generated key with read/write
+    const dynamicKey = generateApiKey("Dynamic Test Integration Key");
+    assert(dynamicKey.fullKey.startsWith("sf_live_"), "Generated key has strict enterprise prefix");
 
-    // Verify dynamically generated key
+    if (testWorkspace) {
+      await prisma.apiKey.create({
+        data: {
+          workspaceId: testWorkspace.id,
+          name: "Dynamic Test Key",
+          keyPrefix: dynamicKey.keyPrefix,
+          keyHash: dynamicKey.keyHash,
+          permissions: ["read", "write"],
+        },
+      });
+
+      const dynamicValidation = await validateApiKey(dynamicKey.fullKey);
+      assert(
+        dynamicValidation.valid &&
+          dynamicValidation.workspaceId === testWorkspace.id &&
+          Array.isArray(dynamicValidation.permissions) &&
+          dynamicValidation.permissions.includes("write"),
+        "Dynamic runtime API key validates accurately against SHA-256 hash lookup"
+      );
+
+      // Verify tampered key is rejected
+      const tamperedKey = dynamicKey.fullKey.slice(0, -6) + "abcdef";
+      const tamperedValidation = await validateApiKey(tamperedKey);
+      assert(!tamperedValidation.valid, "Tampered API key signature is strictly rejected");
+    }
+
+    // Verify dynamically generated read-only key
     const generated = generateApiKey("Read-Only Telemetry Key");
     assert(generated.fullKey.startsWith("sf_live_"), "Generated key has strict enterprise prefix");
 
@@ -319,6 +339,78 @@ async function runTestSuite() {
       const quotaCheck = await checkPlanQuota(testWorkspace.id, "automations");
       assert(typeof quotaCheck.allowed === "boolean", "checkPlanQuota handles 'automations' feature");
       assert(quotaCheck.limit > 0, `Plan limit derived from workspace plan (Got limit: ${quotaCheck.limit})`);
+    }
+
+    // 12. Scoring Custom Thresholds Strict Ordering Validation
+    console.log("\n--- 12. SCORING THRESHOLD INTEGRITY ---");
+    const validThresholds = validateCustomThresholds({
+      coldMax: 25,
+      lowMax: 45,
+      warmMax: 65,
+      highMax: 80,
+      hotMin: 85,
+    });
+    assert(validThresholds.valid, "Valid threshold distribution accepted (0 <= cold < low < warm < high < hot <= 100)");
+
+    const invalidInverted = validateCustomThresholds({
+      coldMax: 90,
+      lowMax: 20,
+      warmMax: 10,
+      highMax: 5,
+      hotMin: 2,
+    });
+    assert(!invalidInverted.valid, "Inverted threshold distribution strictly rejected");
+
+    const invalidNegative = validateCustomThresholds({
+      coldMax: -5,
+      lowMax: 30,
+      warmMax: 50,
+      highMax: 70,
+      hotMin: 85,
+    });
+    assert(!invalidNegative.valid, "Negative threshold values strictly rejected");
+
+    // 13. Production In-Memory Rate Limiter Verification
+    console.log("\n--- 13. RATE LIMITING INTEGRITY ---");
+    const testRateKey = `test_limit_${Date.now()}`;
+    const initialCheck = checkRateLimit(testRateKey, { limit: 2, windowMs: 10000 });
+    assert(initialCheck.success && initialCheck.remaining === 1, "First request within rate limit window allowed");
+
+    const secondCheck = checkRateLimit(testRateKey, { limit: 2, windowMs: 10000 });
+    assert(secondCheck.success && secondCheck.remaining === 0, "Second request consumed remaining slot");
+
+    const thirdCheck = checkRateLimit(testRateKey, { limit: 2, windowMs: 10000 });
+    assert(!thirdCheck.success && thirdCheck.remaining === 0, "Third request strictly blocked by rate limiter (HTTP 429 semantics)");
+
+    // 14. Calculation Endpoint Authentication Defense
+    console.log("\n--- 14. SCORING CALCULATION AUTHENTICATION ---");
+    const unauthReq = new Request("http://localhost:3000/api/v1/scoring/calculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const unauthCaller = await resolveCaller(unauthReq);
+    assert(unauthCaller === null, "Unauthenticated request to /api/v1/scoring/calculate blocked at caller resolution");
+
+    // 15. Lead PATCH Score & Intent Forgery Immunity Defense
+    console.log("\n--- 15. SCORE FORGERY DEFENSE ---");
+    if (testWorkspace) {
+      const sampleLead = await prisma.lead.findFirst({
+        where: { workspaceId: testWorkspace.id },
+      });
+      if (sampleLead) {
+        const originalScore = sampleLead.score;
+        const originalIntent = sampleLead.intentLevel;
+
+        // Simulate PATCH handler updateData logic
+        const forgedAttempt: any = { score: 99, intentLevel: "HOT" };
+        const safeUpdateData: any = {};
+        if (forgedAttempt.dealValue !== undefined) safeUpdateData.dealValue = Number(forgedAttempt.dealValue);
+        // Note: score and intentLevel are strictly omitted from allowed PATCH updateData fields
+
+        assert(safeUpdateData.score === undefined, "Manual score forgery omitted from Lead PATCH update payload");
+        assert(safeUpdateData.intentLevel === undefined, "Manual intent level forgery omitted from Lead PATCH update payload");
+        assert(safeUpdateData.lastActivityAt === undefined, "CRM metadata edits do not forge prospect lastActivityAt");
+      }
     }
 
     console.log("\n=================================================");

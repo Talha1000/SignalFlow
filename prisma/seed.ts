@@ -950,17 +950,18 @@ async function main() {
     },
   });
 
-  // 11. API Keys & Webhooks
-  const canonicalApiKey = "sf_live_a89f0123_8f9e0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789ab";
-  const canonicalKeyPrefix = "a89f0123";
-  const canonicalKeyHash = crypto.createHash("sha256").update(canonicalApiKey).digest("hex");
+  // 11. API Keys & Webhooks (Dynamically generated at runtime — zero hardcoded credentials)
+  const randomPrefix = crypto.randomBytes(4).toString("hex");
+  const randomSecret = crypto.randomBytes(24).toString("hex");
+  const runtimeGeneratedKey = `sf_live_${randomPrefix}_${randomSecret}`;
+  const runtimeKeyHash = crypto.createHash("sha256").update(runtimeGeneratedKey).digest("hex");
 
   await prisma.apiKey.create({
     data: {
       workspaceId: workspace.id,
-      name: "Production Inbound Telemetry Key",
-      keyPrefix: canonicalKeyPrefix,
-      keyHash: canonicalKeyHash,
+      name: "Default Inbound Telemetry Key",
+      keyPrefix: randomPrefix,
+      keyHash: runtimeKeyHash,
       permissions: ["read", "write"],
     },
   });

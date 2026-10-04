@@ -2,12 +2,22 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { attachSessionCookie, setSessionCookie } from "@/lib/auth/session";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`login:${clientIp}`, { limit: 20, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: `Too many login attempts. Please try again in ${Math.ceil(rateLimit.resetMs / 1000)}s` },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {

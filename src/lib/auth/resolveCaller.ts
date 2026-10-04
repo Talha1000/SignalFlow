@@ -9,6 +9,7 @@ export interface CallerContext {
   role: Role;
   isApiKey: boolean;
   apiKeyName?: string;
+  apiKeyId?: string;
   permissions: string[];
 }
 
@@ -46,6 +47,7 @@ export async function resolveCaller(request: Request): Promise<CallerContext | n
           role,
           isApiKey: true,
           apiKeyName: keyResult.name,
+          apiKeyId: keyResult.keyId,
           permissions: perms,
         };
       }
@@ -54,7 +56,7 @@ export async function resolveCaller(request: Request): Promise<CallerContext | n
   }
 
   // 2. Check for session cookie
-  const session = await getSession();
+  const session = await getSession(request);
   if (session) {
     try {
       // Revalidate membership in database to prevent stale JWT privilege retention

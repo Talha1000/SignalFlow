@@ -128,9 +128,9 @@ export async function PATCH(
     if (body.dealValue !== undefined) updateData.dealValue = Number(body.dealValue);
     if (body.nextAction !== undefined) updateData.nextAction = body.nextAction;
     if (body.nextActionDue !== undefined) updateData.nextActionDue = body.nextActionDue ? new Date(body.nextActionDue) : null;
-    if (body.score !== undefined) updateData.score = Number(body.score);
-    if (body.intentLevel) updateData.intentLevel = body.intentLevel;
-    updateData.lastActivityAt = new Date();
+    // NOTE: Lead score & intentLevel cannot be manually forged via normal PATCH;
+    // they are strictly computed by the deterministic scoring engine from verified signals.
+    // NOTE: lastActivityAt represents actual prospect activity, not CRM metadata updates.
 
     const updated = await prisma.lead.update({
       where: { id: existing.id },

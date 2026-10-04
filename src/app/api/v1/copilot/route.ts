@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { aiService } from "@/lib/ai/provider";
 import { checkPlanQuota } from "@/lib/billing/usage";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,18 @@ export async function POST(request: Request) {
 
     if (caller.isApiKey && !caller.permissions?.includes("read")) {
       return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+    }
+
+    // Rate limiting: 20 Copilot queries per minute per caller
+    const clientIp = getClientIp(request);
+    const rateLimitKey = `copilot:${caller.workspaceId}:${caller.userId || caller.apiKeyId || clientIp}`;
+    const rateLimit = checkRateLimit(rateLimitKey, { limit: 20, windowMs: 60000 });
+    if (!rateLimit.success) {
+      return apiError(
+        `Copilot query rate limit exceeded. Reset in ${Math.ceil(rateLimit.resetMs / 1000)}s`,
+        429,
+        "RATE_LIMIT_EXCEEDED"
+      );
     }
 
     const { query } = await request.json();
@@ -35,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Query real data strictly scoped to caller's workspace
-    const [leads, companies, activities] = await Promise.all([
+    const [leads, companies, activities, totalLeadsCount, totalMembersCount] = await Promise.all([
       prisma.lead.findMany({
         where: { workspaceId: caller.workspaceId, deletedAt: null },
         take: 15,
@@ -52,6 +65,8 @@ export async function POST(request: Request) {
         take: 10,
         orderBy: { createdAt: "desc" },
       }),
+      prisma.lead.count({ where: { workspaceId: caller.workspaceId, deletedAt: null } }),
+      prisma.workspaceMember.count({ where: { workspaceId: caller.workspaceId } }),
     ]);
 
     const hotCount = leads.filter((l) => l.score >= 85).length;
@@ -68,16 +83,16 @@ export async function POST(request: Request) {
 
     const answer = await aiService.askSalesCopilot(query, context);
 
-    // Increment AI credits usage
+    // Increment AI credits usage with accurate counts
     await prisma.usageRecord.upsert({
       where: { workspaceId: caller.workspaceId },
       update: { aiCreditsUsed: { increment: 1 } },
       create: {
         workspaceId: caller.workspaceId,
-        leadsCount: leads.length,
+        leadsCount: totalLeadsCount,
         aiCreditsUsed: 1,
         emailsSentCount: 0,
-        teamMembersCount: 1,
+        teamMembersCount: Math.max(1, totalMembersCount),
       },
     });
 
@@ -87,4 +102,3 @@ export async function POST(request: Request) {
     return apiError("Failed to generate answer", 500, "COPILOT_ERROR", error.message);
   }
 }
-

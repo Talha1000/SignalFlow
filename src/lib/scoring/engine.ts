@@ -7,6 +7,70 @@ export interface ScoreFactor {
   description?: string;
 }
 
+export interface CustomThresholds {
+  coldMax: number;
+  lowMax: number;
+  warmMax: number;
+  highMax: number;
+  hotMin: number;
+}
+
+export function validateCustomThresholds(thresholds?: CustomThresholds | null): {
+  valid: boolean;
+  thresholds: CustomThresholds;
+  error?: string;
+} {
+  const defaultThresholds: CustomThresholds = {
+    coldMax: 29,
+    lowMax: 49,
+    warmMax: 69,
+    highMax: 84,
+    hotMin: 85,
+  };
+
+  if (!thresholds) {
+    return { valid: true, thresholds: defaultThresholds };
+  }
+
+  const { coldMax, lowMax, warmMax, highMax, hotMin } = thresholds;
+
+  if (
+    typeof coldMax !== "number" ||
+    typeof lowMax !== "number" ||
+    typeof warmMax !== "number" ||
+    typeof highMax !== "number" ||
+    typeof hotMin !== "number" ||
+    Number.isNaN(coldMax) ||
+    Number.isNaN(lowMax) ||
+    Number.isNaN(warmMax) ||
+    Number.isNaN(highMax) ||
+    Number.isNaN(hotMin)
+  ) {
+    return {
+      valid: false,
+      thresholds: defaultThresholds,
+      error: "Threshold values must all be numeric",
+    };
+  }
+
+  if (
+    coldMax < 0 ||
+    coldMax >= lowMax ||
+    lowMax >= warmMax ||
+    warmMax >= highMax ||
+    highMax >= hotMin ||
+    hotMin > 100
+  ) {
+    return {
+      valid: false,
+      thresholds: defaultThresholds,
+      error: "Thresholds must satisfy: 0 <= coldMax < lowMax < warmMax < highMax < hotMin <= 100",
+    };
+  }
+
+  return { valid: true, thresholds };
+}
+
 export interface ScoringInput {
   title?: string | null;
   department?: string | null;
@@ -18,13 +82,7 @@ export interface ScoringInput {
     title?: string;
     description?: string | null;
   }>;
-  customThresholds?: {
-    coldMax: number;
-    lowMax: number;
-    warmMax: number;
-    highMax: number;
-    hotMin: number;
-  };
+  customThresholds?: CustomThresholds;
 }
 
 export interface ScoreResult {
@@ -33,6 +91,7 @@ export interface ScoreResult {
   positiveFactors: ScoreFactor[];
   negativeFactors: ScoreFactor[];
   scoreChange7d: number;
+  activityVelocity7d: number;
   explanation: string;
   /** Heuristic signal coverage ratio measuring corroborating evidence (0.0 to 1.0) */
   evidenceStrength: number;
@@ -291,14 +350,8 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
   // Normalize score between 0 and 100
   const finalScore = Math.max(0, Math.min(100, Math.round(baseScore)));
 
-  // Intent thresholds
-  const thresholds = input.customThresholds || {
-    coldMax: 29,
-    lowMax: 49,
-    warmMax: 69,
-    highMax: 84,
-    hotMin: 85,
-  };
+  // Intent thresholds (Validated strictly: 0 <= coldMax < lowMax < warmMax < highMax < hotMin <= 100)
+  const { thresholds } = validateCustomThresholds(input.customThresholds);
 
   let intentLevel: IntentLevel = IntentLevel.COLD;
   if (finalScore >= thresholds.hotMin) {
@@ -311,8 +364,8 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     intentLevel = IntentLevel.LOW;
   }
 
-  // 7-day delta calculation
-  const scoreChange7d = Math.round(recent7dCount * 4 + (daysSinceLatest <= 2 ? 6 : -3));
+  // 7-day activity velocity heuristic (recent interaction burst weight)
+  const activityVelocity7d = Math.round(recent7dCount * 4 + (daysSinceLatest <= 2 ? 6 : -3));
 
   // Plain language explanation
   let explanation = "";
@@ -334,7 +387,8 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     intentLevel,
     positiveFactors,
     negativeFactors,
-    scoreChange7d,
+    scoreChange7d: activityVelocity7d,
+    activityVelocity7d,
     explanation,
     evidenceStrength,
   };
