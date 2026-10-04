@@ -387,7 +387,7 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     intentLevel,
     positiveFactors,
     negativeFactors,
-    scoreChange7d: activityVelocity7d,
+    scoreChange7d: activityVelocity7d, // Kept for backwards compatibility with database delta7d column
     activityVelocity7d,
     explanation,
     evidenceStrength,

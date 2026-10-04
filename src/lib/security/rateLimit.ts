@@ -35,12 +35,35 @@ export interface RateLimitResult {
 }
 
 /**
+  * Storage adapter interface for distributed rate limiters (e.g., Upstash / Redis / DynamoDB / PostgreSQL).
+  * Enables zero-friction drop-in replacement of the default in-memory sliding window store across multi-node or serverless clusters.
+  */
+export interface RateLimitStoreAdapter {
+  check(key: string, options: RateLimitOptions): Promise<RateLimitResult> | RateLimitResult;
+}
+
+let customStoreAdapter: RateLimitStoreAdapter | null = null;
+
+export function setRateLimitStoreAdapter(adapter: RateLimitStoreAdapter) {
+  customStoreAdapter = adapter;
+}
+
+/**
  * Evaluates rate limit for a given key (e.g. IP, userId, apiKey).
  */
 export function checkRateLimit(
   key: string,
   options: RateLimitOptions = { limit: 60, windowMs: 60000 }
 ): RateLimitResult {
+  if (customStoreAdapter) {
+    const res = customStoreAdapter.check(key, options);
+    if ("then" in res) {
+      // Async adapter resolution is supported via checkRateLimitAsync
+      throw new Error("Use checkRateLimitAsync when using an asynchronous distributed adapter");
+    }
+    return res;
+  }
+
   const now = Date.now();
   const existing = store.get(key);
 
@@ -75,6 +98,19 @@ export function checkRateLimit(
     remaining: options.limit - existing.count,
     resetMs: Math.max(0, existing.resetAt - now),
   };
+}
+
+/**
+ * Asynchronous rate limit evaluator for distributed network-backed stores (Redis / Upstash / PostgreSQL).
+ */
+export async function checkRateLimitAsync(
+  key: string,
+  options: RateLimitOptions = { limit: 60, windowMs: 60000 }
+): Promise<RateLimitResult> {
+  if (customStoreAdapter) {
+    return await customStoreAdapter.check(key, options);
+  }
+  return checkRateLimit(key, options);
 }
 
 /**

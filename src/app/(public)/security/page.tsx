@@ -27,7 +27,7 @@ export default function SecurityPage() {
       icon: FileText,
       title: "Comprehensive Audit Logging",
       description:
-        "Every significant workspace event—including score adjustments, sequence enrollments, team member invites, and webhook updates—is logged with actor ID, IP address, timestamp, and metadata diff.",
+        "Workspace events—including score adjustments, sequence enrollments, team member updates, and stage transitions—are captured with actor ID, client IP address, timestamp, and audit details.",
     },
   ];
 
@@ -35,14 +35,14 @@ export default function SecurityPage() {
     <div className="py-16 sm:py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-[#38b6ff]/30 bg-[#38b6ff]/10 px-3.5 py-1 text-xs font-semibold text-[#38b6ff] light:text-[#0284c7]">
-          <Shield className="h-3.5 w-3.5" /> Enterprise Security & Compliance
+          <Shield className="h-3.5 w-3.5" /> Enterprise Security Architecture
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white light:text-[#121212]">
           Security built as an immutable foundation
         </h1>
         <p className="text-sm sm:text-base text-slate-300 light:text-[#4a5053]">
-          SignalFlow was architected from line one to protect enterprise customer data and ensure
-          flawless multi-tenant boundary integrity.
+          SignalFlow was architected from line one to protect customer data and enforce
+          strict multi-tenant isolation across every endpoint and database query.
         </p>
       </div>
 
@@ -66,19 +66,19 @@ export default function SecurityPage() {
 
       {/* Compliance standards table */}
       <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-sm p-8 space-y-4">
-        <h3 className="text-lg font-bold text-white light:text-[#121212]">Enterprise Standards & Specifications</h3>
+        <h3 className="text-lg font-bold text-white light:text-[#121212]">Security Design & Industry Alignment</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-xs">
           <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
-            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">SOC2 Type II Ready</span>
-            <p className="text-slate-400 light:text-[#787e82]">Security, Availability, and Confidentiality controls</p>
+            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">Enterprise-Ready Architecture</span>
+            <p className="text-slate-400 light:text-[#787e82]">Engineered in alignment with SOC2 trust services criteria</p>
           </div>
           <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
-            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">GDPR & CCPA Compliant</span>
-            <p className="text-slate-400 light:text-[#787e82]">Full data subject request and export capabilities</p>
+            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">Privacy by Design</span>
+            <p className="text-slate-400 light:text-[#787e82]">Built for GDPR & CCPA data subject export and deletion workflows</p>
           </div>
           <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
-            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">TLS 1.3 & AES-256</span>
-            <p className="text-slate-400 light:text-[#787e82]">Encrypted in transit and at rest at all times</p>
+            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">TLS 1.3 & Encrypted Storage</span>
+            <p className="text-slate-400 light:text-[#787e82]">Secure transport encryption and cryptographic one-way hashing</p>
           </div>
         </div>
       </div>

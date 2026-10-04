@@ -3,8 +3,36 @@ import { calculateLeadScore, ScoringInput, validateCustomThresholds } from "@/li
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const CalculateScoreSchema = z.object({
+  title: z.string().max(255).optional(),
+  department: z.string().max(255).optional(),
+  companySize: z.string().max(255).optional(),
+  industry: z.string().max(255).optional(),
+  activities: z
+    .array(
+      z.object({
+        type: z.string().max(100).optional(),
+        title: z.string().max(255).optional(),
+        description: z.string().max(1000).optional(),
+        createdAt: z.union([z.string(), z.date()]).optional(),
+      })
+    )
+    .max(100, "Maximum 100 activities allowed per calculation batch")
+    .optional(),
+  customThresholds: z
+    .object({
+      coldMax: z.number().min(0).max(100),
+      lowMax: z.number().min(0).max(100),
+      warmMax: z.number().min(0).max(100),
+      highMax: z.number().min(0).max(100),
+      hotMin: z.number().min(0).max(100),
+    })
+    .optional(),
+});
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -36,7 +64,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const body: ScoringInput = await request.json();
+    let rawBody: any;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return apiError("Malformed JSON request payload", 400, "BAD_REQUEST");
+    }
+
+    const parseResult = CalculateScoreSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const issue = parseResult.error.issues[0]?.message || "Validation failed";
+      return apiError(issue, 400, "VALIDATION_FAILED", parseResult.error.format());
+    }
+
+    const body = parseResult.data;
 
     // 4. Validate custom thresholds if provided
     if (body.customThresholds) {

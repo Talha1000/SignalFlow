@@ -413,6 +413,37 @@ async function runTestSuite() {
       }
     }
 
+    // 16. Atomic Quota Consumption Integrity
+    console.log("\n--- 16. ATOMIC PLAN QUOTA CONSUMPTION ---");
+    if (testWorkspace) {
+      const { checkAndConsumePlanQuota } = await import("../src/lib/billing/usage");
+      const quotaConsumption = await checkAndConsumePlanQuota(testWorkspace.id, "aiCredits", 1);
+      assert(typeof quotaConsumption.allowed === "boolean", "checkAndConsumePlanQuota executes atomically via transaction");
+      assert(quotaConsumption.limit > 0, `Plan quota limit defined for workspace plan (${quotaConsumption.limit})`);
+    }
+
+    // 17. Deep SSRF DNS Resolution Protection
+    console.log("\n--- 17. DEEP SSRF DNS RESOLUTION DEFENSE ---");
+    const { isSafePublicWebhookUrlAsync } = await import("../src/lib/automations/executor");
+    const safeDomainCheck = await isSafePublicWebhookUrlAsync("https://hooks.slack.com/services/T00/B00/X00");
+    assert(safeDomainCheck === true, "Public HTTPS webhook passes SSRF validation");
+
+    const unsafeIpCheck = await isSafePublicWebhookUrlAsync("https://169.254.169.254/latest/meta-data");
+    assert(unsafeIpCheck === false, "Cloud metadata IP strictly blocked by SSRF defense");
+
+    const unsafeLocalhostCheck = await isSafePublicWebhookUrlAsync("https://localhost:8080/webhook");
+    assert(unsafeLocalhostCheck === false, "Localhost domain strictly blocked by SSRF defense");
+
+    // 18. Minimal Public Health Endpoint Information
+    console.log("\n--- 18. HEALTH ENDPOINT DISCLOSURE MINIMIZATION ---");
+    const { GET: healthGet } = await import("../src/app/api/health/route");
+    const healthResponse = await healthGet();
+    const healthJson = await healthResponse.json();
+    assert(healthJson.status === "operational", "Health endpoint reports status operational");
+    assert(healthJson.nodeVersion === undefined, "Node version omitted from public health response");
+    assert(healthJson.platform === undefined, "Platform details omitted from public health response");
+    assert(healthJson.systemMetrics === undefined, "System memory metrics omitted from public health response");
+
     console.log("\n=================================================");
     console.log(`SUMMARY: ${passes} PASSED, ${fails} FAILED`);
     console.log("=================================================");

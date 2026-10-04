@@ -3,21 +3,37 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { calculateLeadScore } from "@/lib/scoring/engine";
 import { executeWorkspaceAutomations } from "@/lib/automations/executor";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { ActivityType, IntentLevel, LeadStage } from "@prisma/client";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-interface SignalPayload {
-  domain: string;
-  companyName?: string;
-  signalType: "PRICING_VISIT" | "DOCS_VIEW" | "DEMO_VISIT" | "GITHUB_STAR" | "EXECUTIVE_HIRE" | "EMAIL_REPLY" | "PAGE_VIEW";
-  title?: string;
-  contactEmail?: string;
-  contactName?: string;
-  contactTitle?: string;
-  metadata?: Record<string, any>;
-}
+const SignalSchema = z.object({
+  domain: z.string().min(1, "Domain is required").max(255),
+  companyName: z.string().max(255).optional(),
+  signalType: z.enum([
+    "PRICING_VISIT",
+    "DOCS_VIEW",
+    "DEMO_VISIT",
+    "GITHUB_STAR",
+    "EXECUTIVE_HIRE",
+    "EMAIL_REPLY",
+    "PAGE_VIEW",
+  ]),
+  title: z.string().max(255).optional(),
+  contactEmail: z.string().email("Invalid contact email format").max(255).optional(),
+  contactName: z.string().max(255).optional(),
+  contactTitle: z.string().max(255).optional(),
+  metadata: z
+    .record(z.string(), z.any())
+    .optional()
+    .refine(
+      (val) => !val || JSON.stringify(val).length <= 32768,
+      "Metadata payload exceeds maximum size limit (32KB)"
+    ),
+});
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -31,11 +47,42 @@ export async function POST(request: Request) {
       return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
     }
 
-    const body: SignalPayload = await request.json();
-
-    if (!body.domain || !body.signalType) {
-      return apiError("Missing required fields: 'domain' and 'signalType' are mandatory.", 400, "VALIDATION_FAILED");
+    // Rate Limiting: 300 signals/min per caller (API key or session user), plus 600 signals/min per workspace ceiling
+    const callerRateKey = `signals:caller:${caller.apiKeyId || caller.userId || getClientIp(request)}`;
+    const callerLimit = checkRateLimit(callerRateKey, { limit: 300, windowMs: 60000 });
+    if (!callerLimit.success) {
+      return apiError(
+        "Signal ingestion rate limit exceeded (300 requests/minute). Please throttle client bursts.",
+        429,
+        "RATE_LIMITED"
+      );
     }
+
+    const wsRateKey = `signals:ws:${caller.workspaceId}`;
+    const wsLimit = checkRateLimit(wsRateKey, { limit: 600, windowMs: 60000 });
+    if (!wsLimit.success) {
+      return apiError(
+        "Workspace global signal ingestion limit exceeded (600 requests/minute).",
+        429,
+        "RATE_LIMITED"
+      );
+    }
+
+    let rawBody: any;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return apiError("Malformed JSON request payload", 400, "BAD_REQUEST");
+    }
+
+    // Runtime Schema Validation with Zod
+    const parseResult = SignalSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const issue = parseResult.error.issues[0]?.message || "Validation failed";
+      return apiError(`Invalid signal payload: ${issue}`, 400, "VALIDATION_FAILED", parseResult.error.format());
+    }
+
+    const body = parseResult.data;
 
     const cleanDomain = body.domain
       .toLowerCase()
@@ -200,6 +247,17 @@ export async function POST(request: Request) {
         },
       });
 
+      // Calculate true historical 7-day score movement from actual ScoreEvents
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const pastEvents = await prisma.scoreEvent.findMany({
+        where: {
+          leadId: lead.id,
+          createdAt: { gte: sevenDaysAgo },
+        },
+        select: { delta: true },
+      });
+      const historicalMovement7d = pastEvents.reduce((acc, ev) => acc + ev.delta, 0) + pointChange;
+
       // Upsert LeadScore record
       await prisma.leadScore.upsert({
         where: { leadId: lead.id },
@@ -208,7 +266,7 @@ export async function POST(request: Request) {
           intentLevel,
           positiveFactors: scoreResult.positiveFactors as any,
           negativeFactors: scoreResult.negativeFactors as any,
-          delta7d: scoreResult.scoreChange7d,
+          delta7d: historicalMovement7d,
           explanation: scoreResult.explanation,
           evidenceStrength: scoreResult.evidenceStrength,
           lastCalculatedAt: new Date(),
@@ -220,7 +278,7 @@ export async function POST(request: Request) {
           intentLevel,
           positiveFactors: scoreResult.positiveFactors as any,
           negativeFactors: scoreResult.negativeFactors as any,
-          delta7d: scoreResult.scoreChange7d,
+          delta7d: historicalMovement7d,
           explanation: scoreResult.explanation,
           evidenceStrength: scoreResult.evidenceStrength,
         },

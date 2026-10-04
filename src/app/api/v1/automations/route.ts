@@ -3,9 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { PERMISSIONS } from "@/lib/auth/rbac";
 import { executeWorkspaceAutomations } from "@/lib/automations/executor";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const TriggerAutomationSchema = z.object({
+  automationId: z.string().max(255).optional(),
+  eventType: z.enum(["SCORE_THRESHOLD", "LEAD_CREATED", "SIGNAL_RECEIVED", "STAGE_CHANGE"]).optional(),
+  leadId: z.string().max(255).optional(),
+});
 
 export async function GET(request: Request) {
   const startTime = Date.now();
@@ -61,8 +69,27 @@ export async function POST(request: Request) {
       }
     }
 
-    const body = await request.json();
-    const { automationId, eventType, leadId } = body;
+    // Rate Limiting: 60 automation triggers/minute
+    const rateLimitKey = `automations:trigger:${caller.apiKeyId || caller.userId || getClientIp(request)}`;
+    const rateCheck = checkRateLimit(rateLimitKey, { limit: 60, windowMs: 60000 });
+    if (!rateCheck.success) {
+      return apiError("Automation trigger rate limit exceeded (60 requests/minute)", 429, "RATE_LIMITED");
+    }
+
+    let rawBody: any = {};
+    try {
+      rawBody = await request.json();
+    } catch {
+      rawBody = {};
+    }
+
+    const parseResult = TriggerAutomationSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const issue = parseResult.error.issues[0]?.message || "Validation failed";
+      return apiError(issue, 400, "VALIDATION_FAILED", parseResult.error.format());
+    }
+
+    const { automationId, eventType, leadId } = parseResult.data;
 
     // Verify automation belongs to caller's workspace if automationId provided
     if (automationId) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { aiService } from "@/lib/ai/provider";
-import { checkPlanQuota } from "@/lib/billing/usage";
+import { checkAndConsumePlanQuota } from "@/lib/billing/usage";
 import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
       return apiError("Lead not found in workspace", 404, "NOT_FOUND");
     }
 
-    // Check workspace AI quota
-    const quota = await checkPlanQuota(caller.workspaceId, "aiCredits");
+    // Atomically check and consume workspace AI quota (prevents overdraft race conditions)
+    const quota = await checkAndConsumePlanQuota(caller.workspaceId, "aiCredits", 1);
     if (!quota.allowed) {
       return apiError(
         `AI credit limit reached (${quota.current}/${quota.limit}). Please upgrade your workspace tier.`,
@@ -87,24 +87,6 @@ export async function POST(request: Request) {
     };
 
     const email = await aiService.generatePersonalizedEmail(leadContext, tone, customInstructions);
-
-    // Track usage with truthful count initialization
-    const [actualLeadsCount, actualMembersCount] = await Promise.all([
-      prisma.lead.count({ where: { workspaceId: caller.workspaceId, deletedAt: null } }),
-      prisma.workspaceMember.count({ where: { workspaceId: caller.workspaceId } }),
-    ]);
-
-    await prisma.usageRecord.upsert({
-      where: { workspaceId: caller.workspaceId },
-      update: { aiCreditsUsed: { increment: 1 } },
-      create: {
-        workspaceId: caller.workspaceId,
-        leadsCount: actualLeadsCount,
-        aiCreditsUsed: 1,
-        emailsSentCount: 0,
-        teamMembersCount: Math.max(1, actualMembersCount),
-      },
-    });
 
     return apiSuccess(email, { durationMs: Date.now() - startTime });
   } catch (error: any) {

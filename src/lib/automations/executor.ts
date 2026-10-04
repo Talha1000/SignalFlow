@@ -87,6 +87,53 @@ export function isSafePublicWebhookUrl(urlString: string): boolean {
 }
 
 /**
+ * Validates whether an IP address belongs to private/internal/loopback ranges.
+ */
+function isPrivateIp(ip: string): boolean {
+  if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("fe80:") || ip.startsWith("fc00:") || ip.startsWith("fd00:")) {
+    return true;
+  }
+  const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+  const match = ip.match(ipv4Regex);
+  if (!match) return false;
+  const o1 = parseInt(match[1], 10);
+  const o2 = parseInt(match[2], 10);
+  if (o1 === 0 || o1 === 127 || o1 === 10) return true;
+  if (o1 === 172 && o2 >= 16 && o2 <= 31) return true;
+  if (o1 === 192 && o2 === 168) return true;
+  if (o1 === 169 && o2 === 254) return true;
+  return false;
+}
+
+/**
+ * Asynchronous deep SSRF validator: resolves DNS records to ensure no public host points to internal IP spaces.
+ */
+export async function isSafePublicWebhookUrlAsync(urlString: string): Promise<boolean> {
+  if (!isSafePublicWebhookUrl(urlString)) return false;
+
+  try {
+    const url = new URL(urlString);
+    // Dynamic import dns promises to avoid bundling issues on edge runtimes
+    const dns = await import("dns/promises");
+    const addresses = await dns.resolve(url.hostname).catch(() => []);
+    if (!addresses || addresses.length === 0) {
+      // If resolution fails or returns no A records, check fallback lookup
+      const lookup = await dns.lookup(url.hostname).catch(() => null);
+      if (!lookup || !lookup.address) return false;
+      return !isPrivateIp(lookup.address);
+    }
+
+    for (const addr of addresses) {
+      if (isPrivateIp(addr)) return false;
+    }
+    return true;
+  } catch {
+    // If DNS check fails or running in constrained environment, fall back to hostname validation result
+    return isSafePublicWebhookUrl(urlString);
+  }
+}
+
+/**
  * Evaluates and executes active automations in the workspace matching the event.
  * Uses atomic Prisma transactions for internal database updates and records failed states honestly.
  */
@@ -193,7 +240,8 @@ export async function executeWorkspaceAutomations(
             const slackWebhookUrl = settings?.slackWebhookUrl;
 
             if (slackWebhookUrl && typeof slackWebhookUrl === "string") {
-              if (isSafePublicWebhookUrl(slackWebhookUrl)) {
+              const isSafe = await isSafePublicWebhookUrlAsync(slackWebhookUrl);
+              if (isSafe) {
                 try {
                   const controller = new AbortController();
                   const timeoutId = setTimeout(() => controller.abort(), 6000);

@@ -22,7 +22,7 @@ SignalFlow is a B2B lead intelligence and sales automation platform that helps s
 - **Framework**: Next.js 15 (App Router, Turbopack)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: PostgreSQL 18 + Prisma ORM
+- **Database**: PostgreSQL 15+ + Prisma ORM
 - **Auth**: JWT sessions with secure HTTP-only cookies
 - **AI**: Pluggable provider (Gemini API with local heuristic fallback)
 - **Charts**: Recharts

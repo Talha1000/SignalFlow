@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { aiService } from "@/lib/ai/provider";
-import { checkPlanQuota } from "@/lib/billing/usage";
+import { checkAndConsumePlanQuota } from "@/lib/billing/usage";
 import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
@@ -37,8 +37,8 @@ export async function POST(request: Request) {
       return apiError("A valid query string is required", 400, "VALIDATION_FAILED");
     }
 
-    // Check workspace AI credit quota
-    const quota = await checkPlanQuota(caller.workspaceId, "aiCredits");
+    // Check and atomically consume workspace AI credit quota
+    const quota = await checkAndConsumePlanQuota(caller.workspaceId, "aiCredits", 1);
     if (!quota.allowed) {
       return apiError(
         `AI credit limit reached (${quota.current}/${quota.limit}). Please upgrade your workspace tier.`,
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Query real data strictly scoped to caller's workspace
-    const [leads, companies, activities, totalLeadsCount, totalMembersCount] = await Promise.all([
+    const [leads, companies, activities] = await Promise.all([
       prisma.lead.findMany({
         where: { workspaceId: caller.workspaceId, deletedAt: null },
         take: 15,
@@ -65,8 +65,6 @@ export async function POST(request: Request) {
         take: 10,
         orderBy: { createdAt: "desc" },
       }),
-      prisma.lead.count({ where: { workspaceId: caller.workspaceId, deletedAt: null } }),
-      prisma.workspaceMember.count({ where: { workspaceId: caller.workspaceId } }),
     ]);
 
     const hotCount = leads.filter((l) => l.score >= 85).length;
@@ -82,19 +80,6 @@ export async function POST(request: Request) {
     };
 
     const answer = await aiService.askSalesCopilot(query, context);
-
-    // Increment AI credits usage with accurate counts
-    await prisma.usageRecord.upsert({
-      where: { workspaceId: caller.workspaceId },
-      update: { aiCreditsUsed: { increment: 1 } },
-      create: {
-        workspaceId: caller.workspaceId,
-        leadsCount: totalLeadsCount,
-        aiCreditsUsed: 1,
-        emailsSentCount: 0,
-        teamMembersCount: Math.max(1, totalMembersCount),
-      },
-    });
 
     return apiSuccess({ answer }, { durationMs: Date.now() - startTime });
   } catch (error: any) {

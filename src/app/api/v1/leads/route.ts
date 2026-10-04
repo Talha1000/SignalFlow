@@ -3,11 +3,33 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { calculateLeadScore } from "@/lib/scoring/engine";
 import { logAuditEvent } from "@/lib/audit/logger";
-import { checkPlanQuota } from "@/lib/billing/usage";
 import { executeWorkspaceAutomations } from "@/lib/automations/executor";
 import { PERMISSIONS } from "@/lib/auth/rbac";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { ActivityType, LeadStage, Prisma } from "@prisma/client";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
+import { checkAndConsumePlanQuota } from "@/lib/billing/usage";
+import { z } from "zod";
+
+const CreateLeadSchema = z.object({
+  companyName: z.string().max(255).optional(),
+  contactName: z.string().max(255).optional(),
+  email: z.string().email("Invalid email format").max(255).optional(),
+  title: z.string().max(255).optional(),
+  department: z.string().max(100).optional(),
+  phone: z.string().max(50).optional(),
+  domain: z.string().max(255).optional(),
+  dealValue: z.union([z.number(), z.string()]).optional(),
+  stage: z.string().max(50).optional(),
+  source: z.string().max(100).optional(),
+  nextAction: z.string().max(255).optional(),
+  industry: z.string().max(100).optional(),
+  companySize: z.string().max(50).optional(),
+  annualRevenue: z.string().max(100).optional(),
+  location: z.string().max(100).optional(),
+}).refine((data) => data.companyName || data.contactName, {
+  message: "Missing required fields: at least 'companyName' or 'contactName' is required.",
+});
 
 export const dynamic = "force-dynamic";
 
@@ -123,23 +145,36 @@ export async function POST(request: Request) {
       return apiError("Insufficient permissions to create leads", 403, "FORBIDDEN");
     }
 
-    // Check workspace plan quota
-    const quotaCheck = await checkPlanQuota(caller.workspaceId, "leads");
+    // Rate Limiting: 60 lead creations per minute per caller
+    const clientIp = getClientIp(request);
+    const rateKey = `leads:create:${caller.apiKeyId || caller.userId || clientIp}`;
+    const rateCheck = checkRateLimit(rateKey, { limit: 60, windowMs: 60000 });
+    if (!rateCheck.success) {
+      return apiError("Lead creation rate limit exceeded (60 requests/min)", 429, "RATE_LIMITED");
+    }
+
+    let rawBody: any;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return apiError("Malformed JSON request payload", 400, "BAD_REQUEST");
+    }
+
+    const parseResult = CreateLeadSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const issue = parseResult.error.issues[0]?.message || "Validation failed";
+      return apiError(issue, 400, "VALIDATION_FAILED", parseResult.error.format());
+    }
+
+    const body = parseResult.data;
+
+    // Atomic Plan Quota Check & Reservation
+    const quotaCheck = await checkAndConsumePlanQuota(caller.workspaceId, "leads", 1);
     if (!quotaCheck.allowed) {
       return apiError(
         `Workspace lead limit reached (${quotaCheck.current}/${quotaCheck.limit}). Please upgrade plan.`,
         403,
         "QUOTA_EXCEEDED"
-      );
-    }
-
-    const body = await request.json();
-
-    if (!body.companyName && !body.contactName) {
-      return apiError(
-        "Missing required fields: at least 'companyName' or 'contactName' is required.",
-        400,
-        "VALIDATION_FAILED"
       );
     }
 
@@ -285,6 +320,7 @@ export async function POST(request: Request) {
       action: "LEAD_CREATED",
       entityType: "Lead",
       entityId: lead.id,
+      ipAddress: clientIp,
       details: {
         companyName: company.name,
         contactEmail: contact.email,
@@ -292,20 +328,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // 9. Increment UsageRecord
-    await prisma.usageRecord.upsert({
-      where: { workspaceId: caller.workspaceId },
-      update: { leadsCount: { increment: 1 } },
-      create: {
-        workspaceId: caller.workspaceId,
-        leadsCount: 1,
-        aiCreditsUsed: 0,
-        emailsSentCount: 0,
-        teamMembersCount: 1,
-      },
-    });
-
-    // 10. Execute workspace automations for LEAD_CREATED
+    // 9. Execute workspace automations for LEAD_CREATED
     executeWorkspaceAutomations({
       workspaceId: caller.workspaceId,
       leadId: lead.id,

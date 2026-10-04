@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { logAuditEvent } from "@/lib/audit/logger";
 import { PERMISSIONS } from "@/lib/auth/rbac";
+import { getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { ActivityType, LeadStage } from "@prisma/client";
 
@@ -165,6 +166,7 @@ export async function PATCH(
         action: "LEAD_STAGE_CHANGED",
         entityType: "Lead",
         entityId: existing.id,
+        ipAddress: getClientIp(request),
         details: { from: existing.stage, to: body.stage },
       });
     }
@@ -221,6 +223,7 @@ export async function DELETE(
       action: "LEAD_DELETED",
       entityType: "Lead",
       entityId: existing.id,
+      ipAddress: getClientIp(request),
     });
 
     return apiSuccess({ message: "Lead removed successfully", id: existing.id }, { durationMs: Date.now() - startTime });
