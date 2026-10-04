@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Dosis:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,6 +28,8 @@
 }
 
 .light,
+html.light,
+:root.light,
 body.light-mode {
   --background: #f7f7f7;
   --foreground: #121212;
@@ -58,6 +62,18 @@ body {
   overflow-x: hidden;
   position: relative;
   transition: background-color 0.25s ease-in-out, color 0.25s ease-in-out;
+}
+
+body.light-mode,
+html.light body {
+  background-color: #f7f7f7 !important;
+  color: #121212 !important;
+}
+
+body.dark-mode,
+html.dark body {
+  background-color: #121212 !important;
+  color: #ffffff !important;
 }
 
 /* Custom Scrollbars */

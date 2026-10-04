@@ -109,11 +109,18 @@ export function Navbar() {
         <div className="flex items-center gap-2 md:hidden">
           <button
             onClick={toggleTheme}
-            className="relative flex items-center justify-between w-14 h-7 px-1 rounded-full bg-[#1e2224] light:bg-[#eaeaea] border border-white/15 light:border-black/15"
+            className="relative flex items-center justify-between w-16 h-7 px-1 rounded-full bg-[#1e2224] light:bg-[#eaeaea] border border-white/15 light:border-black/15 cursor-pointer"
             aria-label="Toggle theme"
           >
-            <Moon className={`h-3 w-3 ${theme === "dark" ? "text-[#34feff]" : "text-gray-400"}`} />
-            <Sun className={`h-3 w-3 ${theme === "dark" ? "text-gray-500" : "text-[#f2be01]"}`} />
+            <span
+              className={`absolute top-0.5 bottom-0.5 w-5 rounded-full transition-all duration-300 ease-in-out ${
+                theme === "dark"
+                  ? "left-0.5 bg-[#121212] border border-white/20"
+                  : "left-[38px] bg-[#ffffff] border border-black/10"
+              }`}
+            />
+            <Moon className={`relative z-10 h-3 w-3 ${theme === "dark" ? "text-[#34feff]" : "text-gray-400"}`} />
+            <Sun className={`relative z-10 h-3 w-3 ${theme === "dark" ? "text-gray-500" : "text-[#f2be01]"}`} />
           </button>
 
           <button

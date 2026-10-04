@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: ["class"],
@@ -49,8 +50,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-dm-sans)", "Inter", "-apple-system", "sans-serif"],
-        dosis: ["var(--font-dosis)", "sans-serif"],
+        sans: ["'DM Sans'", "Inter", "-apple-system", "sans-serif"],
+        dosis: ["'Dosis'", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       keyframes: {
@@ -69,5 +70,17 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(function ({ addVariant }) {
+      addVariant("light", [
+        "html.light &",
+        ".light &",
+        "body.light-mode &",
+        ":root:not(.dark) &",
+        "html.light&",
+        ".light&",
+        "body.light-mode&",
+      ]);
+    }),
+  ],
 } satisfies Config;
