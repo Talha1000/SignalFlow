@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { calculateLeadScore } from "@/lib/scoring/engine";
+import { executeWorkspaceAutomations } from "@/lib/automations/executor";
 import { apiSuccess, apiError } from "@/lib/api/response";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, IntentLevel, LeadStage } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 interface SignalPayload {
   domain: string;
   companyName?: string;
-  signalType: "PRICING_VISIT" | "DOCS_VIEW" | "DEMO_VISIT" | "GITHUB_STAR" | "EXECUTIVE_HIRE" | "EMAIL_REPLY";
+  signalType: "PRICING_VISIT" | "DOCS_VIEW" | "DEMO_VISIT" | "GITHUB_STAR" | "EXECUTIVE_HIRE" | "EMAIL_REPLY" | "PAGE_VIEW";
   title?: string;
   contactEmail?: string;
   contactName?: string;
@@ -19,92 +22,257 @@ interface SignalPayload {
 export async function POST(request: Request) {
   const startTime = Date.now();
   try {
+    const caller = await resolveCaller(request);
+    if (!caller) {
+      return apiError("Authentication required (Cookie session or Bearer API key)", 401, "UNAUTHORIZED");
+    }
+
     const body: SignalPayload = await request.json();
 
     if (!body.domain || !body.signalType) {
       return apiError("Missing required fields: 'domain' and 'signalType' are mandatory.", 400, "VALIDATION_FAILED");
     }
 
+    const cleanDomain = body.domain
+      .toLowerCase()
+      .trim()
+      .replace(/^(?:https?:\/\/)?(?:www\.)?/i, "")
+      .split("/")[0];
+
     // Map signalType to ActivityType
     let actType: ActivityType = ActivityType.PAGE_VIEW;
-    let basePoints = 10;
     let factorDescription = "Engaged with web telemetry";
 
     switch (body.signalType) {
       case "PRICING_VISIT":
         actType = ActivityType.PRICING_VISIT;
-        basePoints = 18;
-        factorDescription = "High-intent pricing page exploration (3x)";
+        factorDescription = "Explored enterprise pricing tiers";
         break;
       case "DOCS_VIEW":
         actType = ActivityType.DOCS_VIEW;
-        basePoints = 14;
-        factorDescription = "API documentation and rate-limit specification review";
+        factorDescription = "Reviewed API specifications and documentation";
         break;
       case "DEMO_VISIT":
         actType = ActivityType.DEMO_VISIT;
-        basePoints = 25;
-        factorDescription = "Submitted Enterprise Demo request form";
+        factorDescription = "Submitted demo request inquiry";
         break;
       case "EMAIL_REPLY":
         actType = ActivityType.EMAIL_REPLY;
-        basePoints = 20;
-        factorDescription = "Prospect replied to outbound email cadence";
+        factorDescription = "Prospect replied to email sequence";
         break;
       default:
         actType = ActivityType.PAGE_VIEW;
-        basePoints = 8;
-        factorDescription = "Generic website session telemetry";
+        factorDescription = "Web page session activity";
     }
 
-    // Run deterministic scoring calculation
-    const scoreResult = calculateLeadScore({
-      title: body.contactTitle || "Engineering Leader",
-      department: "Engineering",
-      companySize: "100-500",
-      industry: "Enterprise B2B",
-      activities: [
+    // 1. Find or create Company in caller's workspace
+    let company = await prisma.company.findFirst({
+      where: {
+        workspaceId: caller.workspaceId,
+        domain: cleanDomain,
+      },
+    });
+
+    if (!company) {
+      const generatedName =
+        body.companyName ||
+        cleanDomain.split(".")[0].replace(/^./, (str) => str.toUpperCase()) + " Inc";
+
+      company = await prisma.company.create({
+        data: {
+          workspaceId: caller.workspaceId,
+          domain: cleanDomain,
+          name: generatedName,
+          industry: "Technology",
+          size: "100-500",
+          intentScore: 40,
+        },
+      });
+    }
+
+    // 2. Find or create Contact if provided
+    let contact = null;
+    if (body.contactEmail) {
+      contact = await prisma.contact.findFirst({
+        where: {
+          workspaceId: caller.workspaceId,
+          email: body.contactEmail.toLowerCase().trim(),
+        },
+      });
+
+      if (!contact) {
+        const cName = body.contactName || "Inbound Contact";
+        const parts = cName.split(" ");
+        contact = await prisma.contact.create({
+          data: {
+            workspaceId: caller.workspaceId,
+            companyId: company.id,
+            email: body.contactEmail.toLowerCase().trim(),
+            firstName: parts[0] || cName,
+            lastName: parts.slice(1).join(" ") || "",
+            title: body.contactTitle || "Decision Maker",
+          },
+        });
+      }
+    }
+
+    // 3. Find matching active Lead for company in caller's workspace
+    let lead = await prisma.lead.findFirst({
+      where: {
+        workspaceId: caller.workspaceId,
+        companyId: company.id,
+        deletedAt: null,
+      },
+      include: {
+        activities: {
+          take: 15,
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    // 4. Record Activity in database
+    const activity = await prisma.activity.create({
+      data: {
+        workspaceId: caller.workspaceId,
+        companyId: company.id,
+        leadId: lead?.id || null,
+        contactId: contact?.id || lead?.contactId || null,
+        type: actType,
+        title: body.title || `${body.signalType} registered`,
+        description: factorDescription,
+        metadata: body.metadata || undefined,
+      },
+    });
+
+    // 5. Recalculate lead score if lead exists
+    let previousScore = lead?.score ?? 0;
+    let newScore = previousScore;
+    let intentLevel: IntentLevel = lead?.intentLevel ?? IntentLevel.COLD;
+    let scoreResult = null;
+
+    if (lead) {
+      const existingActivities = [
+        ...lead.activities,
         {
           type: actType,
           createdAt: new Date(),
-          title: body.title || `${body.signalType} registered`,
-          description: factorDescription,
+          title: activity.title,
+          description: activity.description,
         },
-      ],
+      ];
+
+      scoreResult = calculateLeadScore({
+        title: body.contactTitle || "Engineering Leader",
+        companySize: company.size,
+        industry: company.industry,
+        activities: existingActivities.map((a) => ({
+          type: a.type,
+          createdAt: a.createdAt,
+          title: a.title,
+          description: a.description,
+        })),
+      });
+
+      newScore = scoreResult.score;
+      intentLevel = scoreResult.intentLevel;
+      const pointChange = newScore - previousScore;
+
+      // Update lead in Prisma
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          score: newScore,
+          intentLevel,
+          lastActivityAt: new Date(),
+        },
+      });
+
+      // Upsert LeadScore record
+      await prisma.leadScore.upsert({
+        where: { leadId: lead.id },
+        update: {
+          currentScore: newScore,
+          intentLevel,
+          positiveFactors: scoreResult.positiveFactors as any,
+          negativeFactors: scoreResult.negativeFactors as any,
+          delta7d: scoreResult.scoreChange7d,
+          explanation: scoreResult.explanation,
+          confidence: scoreResult.confidence,
+          lastCalculatedAt: new Date(),
+        },
+        create: {
+          workspaceId: caller.workspaceId,
+          leadId: lead.id,
+          currentScore: newScore,
+          intentLevel,
+          positiveFactors: scoreResult.positiveFactors as any,
+          negativeFactors: scoreResult.negativeFactors as any,
+          delta7d: scoreResult.scoreChange7d,
+          explanation: scoreResult.explanation,
+          confidence: scoreResult.confidence,
+        },
+      });
+
+      // Record ScoreEvent
+      if (pointChange !== 0) {
+        await prisma.scoreEvent.create({
+          data: {
+            workspaceId: caller.workspaceId,
+            leadId: lead.id,
+            previousScore,
+            newScore,
+            delta: pointChange,
+            factorName: body.signalType,
+            reason: factorDescription,
+          },
+        });
+      }
+    }
+
+    // 6. Execute matching workspace automations
+    const automationOutcomes = await executeWorkspaceAutomations({
+      workspaceId: caller.workspaceId,
+      leadId: lead?.id,
+      triggerType: newScore >= 80 ? "SCORE_THRESHOLD" : "SIGNAL_RECEIVED",
+      currentScore: newScore,
+      intentLevel,
+      signalType: body.signalType,
+      domain: cleanDomain,
+      companyName: company.name,
     });
 
-    const isHotSurge = scoreResult.score >= 80;
-    const recommendedAction = isHotSurge
-      ? "Immediate executive touchpoint. Schedule technical architecture review sandbox."
-      : "Enroll in consultative industry benchmark sequence.";
-
-    const result = {
-      event: {
-        id: `sig_${Math.random().toString(36).substring(2, 9)}`,
-        signalType: body.signalType,
-        domain: body.domain.toLowerCase(),
-        companyName: body.companyName || body.domain.split(".")[0].toUpperCase(),
-        timestamp: new Date().toISOString(),
+    return apiSuccess(
+      {
+        signal: {
+          id: activity.id,
+          signalType: body.signalType,
+          domain: cleanDomain,
+          companyId: company.id,
+          companyName: company.name,
+          recordedAt: activity.createdAt,
+        },
+        scoring: {
+          leadId: lead?.id || null,
+          previousScore,
+          newScore,
+          pointsDelta: newScore - previousScore,
+          intentLevel,
+          isSurging: newScore >= 80,
+          factors: scoreResult?.positiveFactors || [],
+          explanation: scoreResult?.explanation || "Activity registered into company telemetry timeline.",
+        },
+        automations: {
+          triggeredCount: automationOutcomes.length,
+          outcomes: automationOutcomes,
+        },
       },
-      telemetry: {
-        pointsAdded: basePoints,
-        newComputedScore: scoreResult.score,
-        intentLevel: scoreResult.intentLevel,
-        isSurging: isHotSurge,
-        explanation: scoreResult.explanation,
-        positiveFactors: scoreResult.positiveFactors,
-      },
-      automationTriggers: {
-        slackAlertDispatched: isHotSurge,
-        targetChannel: isHotSurge ? "#sales-hot-leads" : null,
-        cadenceStatus: body.signalType === "EMAIL_REPLY" ? "HALTED_REPLY_DETECTED" : "ACTIVE",
-        recommendedNextPlay: recommendedAction,
-      },
-    };
-
-    return apiSuccess(result, { durationMs: Date.now() - startTime });
+      { durationMs: Date.now() - startTime },
+      201
+    );
   } catch (error: any) {
     console.error("Signal ingestion error:", error);
     return apiError("Failed to process inbound signal", 500, "INGESTION_ERROR", error.message);
   }
 }
+

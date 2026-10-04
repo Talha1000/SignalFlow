@@ -560,12 +560,16 @@ async function isDatabaseReachable(): Promise<boolean> {
   }
 }
 
-/** Safe database getter helpers that fall back cleanly when Postgres is not connected */
-export async function getLeadsSafe() {
+/** Safe database getter helpers with multi-tenant workspace isolation */
+export async function getLeadsSafe(workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
+      const where: any = { deletedAt: null };
+      if (workspaceId) where.workspaceId = workspaceId;
+
       const leads = await prisma.lead.findMany({
+        where,
         orderBy: { score: "desc" },
         include: {
           company: true,
@@ -575,20 +579,27 @@ export async function getLeadsSafe() {
           activities: { take: 5, orderBy: { createdAt: "desc" } },
         },
       });
-      if (leads && leads.length > 0) return leads;
+      return leads;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getLeadsSafe:", e);
     }
   }
-  return MOCK_LEADS;
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    return MOCK_LEADS;
+  }
+  return [];
 }
 
-export async function getLeadByIdSafe(id: string) {
+export async function getLeadByIdSafe(id: string, workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
-      const lead = await prisma.lead.findUnique({
-        where: { id },
+      const where: any = { id, deletedAt: null };
+      if (workspaceId) where.workspaceId = workspaceId;
+
+      const lead = await prisma.lead.findFirst({
+        where,
         include: {
           company: { include: { contacts: true } },
           contact: true,
@@ -602,35 +613,48 @@ export async function getLeadByIdSafe(id: string) {
       });
       if (lead) return lead;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getLeadByIdSafe:", e);
     }
   }
-  const matched = MOCK_LEADS.find((l) => l.id === id);
-  return matched || MOCK_LEADS[0];
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    const matched = MOCK_LEADS.find((l) => l.id === id);
+    return matched || null;
+  }
+  return null;
 }
 
-export async function getCompaniesSafe() {
+export async function getCompaniesSafe(workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
+      const where = workspaceId ? { workspaceId } : {};
       const companies = await prisma.company.findMany({
+        where,
         include: { leads: true, contacts: true },
         orderBy: { name: "asc" },
       });
-      if (companies && companies.length > 0) return companies;
+      return companies;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getCompaniesSafe:", e);
     }
   }
-  return MOCK_COMPANIES;
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    return MOCK_COMPANIES;
+  }
+  return [];
 }
 
-export async function getCompanyByIdSafe(id: string) {
+export async function getCompanyByIdSafe(id: string, workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
-      const company = await prisma.company.findUnique({
-        where: { id },
+      const where: any = { id };
+      if (workspaceId) where.workspaceId = workspaceId;
+
+      const company = await prisma.company.findFirst({
+        where,
         include: {
           contacts: true,
           leads: { include: { contact: true, owner: true } },
@@ -639,59 +663,82 @@ export async function getCompanyByIdSafe(id: string) {
       });
       if (company) return company;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getCompanyByIdSafe:", e);
     }
   }
-  const matched = MOCK_COMPANIES.find((c) => c.id === id);
-  return matched || MOCK_COMPANIES[0];
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    const matched = MOCK_COMPANIES.find((c) => c.id === id);
+    return matched || null;
+  }
+  return null;
 }
 
-export async function getContactsSafe() {
+export async function getContactsSafe(workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
+      const where = workspaceId ? { workspaceId } : {};
       const contacts = await prisma.contact.findMany({
+        where,
         include: { company: true },
         orderBy: { firstName: "asc" },
       });
-      if (contacts && contacts.length > 0) return contacts;
+      return contacts;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getContactsSafe:", e);
     }
   }
-  return MOCK_CONTACTS;
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    return MOCK_CONTACTS;
+  }
+  return [];
 }
 
-export async function getAutomationsSafe() {
+export async function getAutomationsSafe(workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
+      const where = workspaceId ? { workspaceId } : {};
       const automations = await prisma.automation.findMany({
+        where,
         orderBy: { createdAt: "desc" },
       });
-      if (automations && automations.length > 0) return automations;
+      return automations;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getAutomationsSafe:", e);
     }
   }
-  return MOCK_AUTOMATIONS;
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    return MOCK_AUTOMATIONS;
+  }
+  return [];
 }
 
-export async function getSequencesSafe() {
+export async function getSequencesSafe(workspaceId?: string) {
   const dbOk = await isDatabaseReachable();
   if (dbOk) {
     try {
+      const where = workspaceId ? { workspaceId } : {};
       const sequences = await prisma.sequence.findMany({
+        where,
         include: {
           steps: { orderBy: { stepOrder: "asc" } },
           enrollments: true,
         },
         orderBy: { createdAt: "desc" },
       });
-      if (sequences && sequences.length > 0) return sequences;
+      return sequences;
     } catch (e) {
-      // fallback
+      console.error("Database query failed in getSequencesSafe:", e);
     }
   }
-  return MOCK_SEQUENCES;
+
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    return MOCK_SEQUENCES;
+  }
+  return [];
 }
+

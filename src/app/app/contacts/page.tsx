@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
 import { getContactsSafe } from "@/lib/mockData";
 import { Users, Mail, Phone, Building, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -7,7 +8,9 @@ import { Button } from "@/components/ui/Button";
 export const dynamic = "force-dynamic";
 
 export default async function ContactsPage() {
-  const contacts = await getContactsSafe();
+  const session = await getSession();
+  const contacts = await getContactsSafe(session?.workspaceId);
+
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

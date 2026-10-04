@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie } from "@/lib/auth/session";
-import { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    // In production, demo mode is disabled unless explicitly enabled via DEMO_MODE=true
+    if (process.env.NODE_ENV === "production" && process.env.DEMO_MODE !== "true") {
+      return NextResponse.json(
+        { error: "Demo persona login is disabled in production. Please use your credentials." },
+        { status: 403 }
+      );
+    }
+
     let email = "alex.morgan@signalflow.io";
     try {
       const body = await request.json();
@@ -17,65 +24,43 @@ export async function POST(request: Request) {
 
     const targetEmail = email.toLowerCase().trim();
 
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: targetEmail },
-        include: {
-          memberships: {
-            include: {
-              workspace: true,
-            },
+    const user = await prisma.user.findUnique({
+      where: { email: targetEmail },
+      include: {
+        memberships: {
+          include: {
+            workspace: true,
           },
         },
-      });
+      },
+    });
 
-      if (user && user.memberships.length > 0) {
-        const membership = user.memberships[0];
-
-        await setSessionCookie({
-          userId: user.id,
-          email: user.email,
-          name: user.name,
-          workspaceId: membership.workspaceId,
-          role: membership.role,
-        });
-
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            workspaceId: membership.workspaceId,
-            workspaceName: membership.workspace.name,
-            role: membership.role,
-          },
-        });
-      }
-    } catch (dbErr) {
-      // Database not connected or user not seeded, proceed to resilient fallback
+    if (!user || user.memberships.length === 0) {
+      return NextResponse.json(
+        { error: `Demo account (${targetEmail}) not found in database. Please run 'npm run seed' first.` },
+        { status: 404 }
+      );
     }
 
-    // Resilient Fallback: Issue valid demo session
-    const fallbackUser = {
-      userId: "user-1",
-      email: targetEmail,
-      name: "Alex Morgan",
-      workspaceId: "ws-default",
-      role: Role.OWNER,
-    };
+    const membership = user.memberships[0];
 
-    await setSessionCookie(fallbackUser);
+    await setSessionCookie({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      workspaceId: membership.workspaceId,
+      role: membership.role,
+    });
 
     return NextResponse.json({
       success: true,
       user: {
-        id: "user-1",
-        name: "Alex Morgan",
-        email: targetEmail,
-        workspaceId: "ws-default",
-        workspaceName: "Acme Revenue Org",
-        role: "OWNER",
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        workspaceId: membership.workspaceId,
+        workspaceName: membership.workspace.name,
+        role: membership.role,
       },
     });
   } catch (error: any) {
@@ -83,3 +68,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Demo login failed" }, { status: 500 });
   }
 }
+

@@ -3,7 +3,17 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 
-const JWT_SECRET = process.env.JWT_SECRET || "signalflow_dev_secret_key_2026";
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing in production.");
+    }
+    return "signalflow_dev_secret_key_2026";
+  }
+  return secret;
+}
+
 const COOKIE_NAME = "signalflow_session";
 
 export interface SessionPayload {
@@ -15,12 +25,12 @@ export interface SessionPayload {
 }
 
 export function signSessionToken(payload: SessionPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" });
 }
 
 export function verifySessionToken(token: string): SessionPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as SessionPayload;
+    return jwt.verify(token, getJwtSecret()) as SessionPayload;
   } catch {
     return null;
   }
@@ -31,6 +41,14 @@ export async function getSession(): Promise<SessionPayload | null> {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return verifySessionToken(token);
+}
+
+export async function requireSession(): Promise<SessionPayload> {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("UNAUTHORIZED");
+  }
+  return session;
 }
 
 export async function setSessionCookie(payload: SessionPayload): Promise<void> {
@@ -74,30 +92,36 @@ export async function getCurrentUserAndWorkspace() {
         return {
           user,
           workspace: currentMembership ? currentMembership.workspace : null,
-          role: currentMembership ? currentMembership.role : Role.VIEWER,
+          role: currentMembership ? currentMembership.role : session.role,
         };
       }
-    } catch {
-      // Database not reachable
+    } catch (err) {
+      console.error("Database query failed in getCurrentUserAndWorkspace:", err);
     }
   }
 
-  // Resilient fallback for demo / testing
-  return {
-    user: {
-      id: session?.userId || "user-1",
-      email: session?.email || "alex@signalflow.io",
-      name: session?.name || "Alex Morgan",
-      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
-      memberships: [],
-    },
-    workspace: {
-      id: session?.workspaceId || "ws-default",
-      name: "Acme Revenue Org",
-      slug: "acme-revops",
-      domain: "signalflow.io",
-      plan: "GROWTH",
-    },
-    role: session?.role || Role.OWNER,
-  };
+  // Explicit demo fallback permitted ONLY in non-production when DEMO_MODE is true
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_MODE === "true") {
+    return {
+      user: {
+        id: session?.userId || "user-demo",
+        email: session?.email || "demo@signalflow.io",
+        name: session?.name || "Demo User",
+        avatarUrl: "https://avatar.vercel.sh/demo",
+        memberships: [],
+      },
+      workspace: {
+        id: session?.workspaceId || "ws-demo",
+        name: "Demo Workspace",
+        slug: "demo-workspace",
+        domain: "signalflow.io",
+        plan: "GROWTH" as any,
+      },
+      role: session?.role || Role.OWNER,
+    };
+  }
+
+  // Strictly unauthenticated
+  return null;
 }
+

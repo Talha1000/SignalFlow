@@ -14,88 +14,59 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = String(email).toLowerCase().trim();
 
-    // Check database if available
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-        include: {
-          memberships: {
-            include: {
-              workspace: true,
-            },
+    const user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+      include: {
+        memberships: {
+          include: {
+            workspace: true,
           },
         },
-      });
+      },
+    });
 
-      if (user) {
-        const isValid = await bcrypt.compare(password, user.passwordHash);
-        if (isValid) {
-          const primaryMembership = user.memberships[0];
-          const wsId = primaryMembership?.workspaceId || "ws-default";
-          const wsName = primaryMembership?.workspace?.name || "Acme Revenue Org";
-          const role = primaryMembership?.role || Role.OWNER;
-
-          await setSessionCookie({
-            userId: user.id,
-            email: user.email,
-            name: user.name,
-            workspaceId: wsId,
-            role,
-          });
-
-          return NextResponse.json({
-            success: true,
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              workspaceId: wsId,
-              workspaceName: wsName,
-              role,
-            },
-          });
-        }
-      }
-    } catch (dbErr) {
-      // Database not reachable
+    if (!user) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Demo / fallback credentials accepted for local testing
-    if (
-      cleanEmail.includes("demo") ||
-      cleanEmail.includes("alex") ||
-      cleanEmail.includes("signalflow") ||
-      password === "demo" ||
-      password === "password"
-    ) {
-      const fallbackUser = {
-        userId: "user-1",
-        email: cleanEmail,
-        name: cleanEmail.split("@")[0].toUpperCase(),
-        workspaceId: "ws-default",
-        role: Role.OWNER,
-      };
-
-      await setSessionCookie(fallbackUser);
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: "user-1",
-          name: fallbackUser.name,
-          email: cleanEmail,
-          workspaceId: "ws-default",
-          workspaceName: "Acme Revenue Org",
-          role: "OWNER",
-        },
-      });
+    const isValid = await bcrypt.compare(String(password), user.passwordHash);
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    const primaryMembership = user.memberships[0];
+    if (!primaryMembership) {
+      return NextResponse.json({ error: "User is not assigned to any workspace" }, { status: 403 });
+    }
+
+    const wsId = primaryMembership.workspaceId;
+    const wsName = primaryMembership.workspace.name;
+    const role = primaryMembership.role;
+
+    await setSessionCookie({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      workspaceId: wsId,
+      role,
+    });
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        workspaceId: wsId,
+        workspaceName: wsName,
+        role,
+      },
+    });
   } catch (error: any) {
     console.error("Login API error:", error);
-    return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
+    return NextResponse.json({ error: "Authentication service unavailable" }, { status: 500 });
   }
 }
+

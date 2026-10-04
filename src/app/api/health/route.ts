@@ -7,28 +7,30 @@ const SERVER_START_TIME = Date.now();
 
 export async function GET() {
   const startTime = Date.now();
-  let dbStatus = "healthy";
+  let dbStatus = "connected";
   let dbLatencyMs = 0;
+  let isOperational = true;
 
   try {
     const probeStart = Date.now();
     const probe = prisma.$queryRaw`SELECT 1`;
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("TIMEOUT")), 300)
+      setTimeout(() => reject(new Error("TIMEOUT")), 1000)
     );
     await Promise.race([probe, timeout]);
     dbLatencyMs = Date.now() - probeStart;
-  } catch {
-    dbStatus = "simulated_resilient_mode";
-    dbLatencyMs = 1;
+  } catch (err) {
+    dbStatus = "disconnected";
+    dbLatencyMs = -1;
+    isOperational = false;
   }
 
   const memoryUsage = process.memoryUsage();
   const uptimeSeconds = Math.floor((Date.now() - SERVER_START_TIME) / 1000);
 
   const healthData = {
-    status: "operational",
-    version: "3.4.0",
+    status: isOperational ? "operational" : "degraded",
+    version: "1.1.0",
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -36,9 +38,8 @@ export async function GET() {
     subsystems: {
       api: { status: "operational", latencyMs: Date.now() - startTime },
       database: { status: dbStatus, latencyMs: dbLatencyMs },
-      scoringEngine: { status: "operational", algorithmVersion: "v3.4-explainable" },
-      telemetryIngestion: { status: "operational", throughputPerSec: "12,400" },
-      cadenceDispatcher: { status: "operational", autoStopLatencyMs: "< 50ms" },
+      scoringEngine: { status: "operational", algorithmVersion: "v1.1-deterministic" },
+      automationsEngine: { status: "operational" },
     },
     systemMetrics: {
       memory: {
@@ -52,10 +53,11 @@ export async function GET() {
   };
 
   return NextResponse.json(healthData, {
-    status: 200,
+    status: isOperational ? 200 : 503,
     headers: {
       "Cache-Control": "no-store, max-age=0",
-      "x-signalflow-status": "operational",
+      "x-signalflow-status": isOperational ? "operational" : "degraded",
     },
   });
 }
+

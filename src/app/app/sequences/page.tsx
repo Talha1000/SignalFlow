@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
 import { getSequencesSafe } from "@/lib/mockData";
 import { Zap, Plus, Users, Mail, CheckCircle2, TrendingUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -7,7 +8,9 @@ import { Button } from "@/components/ui/Button";
 export const dynamic = "force-dynamic";
 
 export default async function SequencesPage() {
-  const sequences = await getSequencesSafe();
+  const session = await getSession();
+  const sequences = await getSequencesSafe(session?.workspaceId);
+
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
 import { getCompaniesSafe } from "@/lib/mockData";
 import { Building, Users, ArrowRight } from "lucide-react";
 import { ScoreBadge } from "@/components/ui/Badge";
@@ -7,7 +8,9 @@ import { ScoreBadge } from "@/components/ui/Badge";
 export const dynamic = "force-dynamic";
 
 export default async function CompaniesPage() {
-  const companies = await getCompaniesSafe();
+  const session = await getSession();
+  const companies = await getCompaniesSafe(session?.workspaceId);
+
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

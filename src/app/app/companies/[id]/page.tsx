@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
 import { getCompanyByIdSafe } from "@/lib/mockData";
 import {
   Building,
@@ -25,9 +26,11 @@ export default async function CompanyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const company = await getCompanyByIdSafe(id);
+  const session = await getSession();
+  const company = await getCompanyByIdSafe(id, session?.workspaceId);
 
   if (!company) notFound();
+
 
   const totalPipeline = (company.leads || []).reduce((sum: number, l: any) => sum + (l.dealValue || 0), 0);
 
