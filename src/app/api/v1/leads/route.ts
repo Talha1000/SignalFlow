@@ -19,7 +19,11 @@ export async function GET(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (!PERMISSIONS.VIEW_LEADS(caller.role)) {
+    if (caller.isApiKey && !caller.permissions?.includes("read")) {
+      return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+    }
+
+    if (!caller.isApiKey && !PERMISSIONS.VIEW_LEADS(caller.role)) {
       return apiError("Insufficient permissions to view leads", 403, "FORBIDDEN");
     }
 
@@ -111,7 +115,11 @@ export async function POST(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (!PERMISSIONS.CREATE_LEAD(caller.role)) {
+    if (caller.isApiKey && !caller.permissions?.includes("write")) {
+      return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+    }
+
+    if (!caller.isApiKey && !PERMISSIONS.CREATE_LEAD(caller.role)) {
       return apiError("Insufficient permissions to create leads", 403, "FORBIDDEN");
     }
 

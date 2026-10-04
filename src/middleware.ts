@@ -1,16 +1,69 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+async function verifyJwtInMiddleware(token: string): Promise<boolean> {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+
+    const secret =
+      process.env.JWT_SECRET ||
+      (process.env.NODE_ENV !== "production" ? "signalflow_dev_secret_key_2026" : "");
+    if (!secret) return false;
+
+    // Decode and check payload expiration
+    const base64UrlPayload = parts[1];
+    const base64Payload = base64UrlPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const payloadJson = JSON.parse(atob(base64Payload));
+    if (payloadJson.exp && payloadJson.exp * 1000 < Date.now()) {
+      return false;
+    }
+
+    // Verify HMAC-SHA256 signature using native Web Crypto API (Edge-safe)
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const data = encoder.encode(`${parts[0]}.${parts[1]}`);
+    const signatureStr = parts[2].replace(/-/g, "+").replace(/_/g, "/");
+    const padLength = (4 - (signatureStr.length % 4)) % 4;
+    const paddedSig = signatureStr + "=".repeat(padLength);
+    const binarySig = atob(paddedSig);
+    const sigBytes = new Uint8Array(binarySig.length);
+    for (let i = 0; i < binarySig.length; i++) {
+      sigBytes[i] = binarySig.charCodeAt(i);
+    }
+
+    return await crypto.subtle.verify("HMAC", key, sigBytes, data);
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestId = `req_${Math.random().toString(36).substring(2, 10)}`;
 
-  // 1. Route Protection: Guard /app/* routes
+  // 1. Route Protection: Cryptographically Guard /app/* routes
   if (pathname.startsWith("/app")) {
     const sessionToken = request.cookies.get("signalflow_session")?.value;
     if (!sessionToken) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    const isValid = await verifyJwtInMiddleware(sessionToken);
+    if (!isValid) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      const redirectResponse = NextResponse.redirect(loginUrl);
+      redirectResponse.cookies.delete("signalflow_session");
+      return redirectResponse;
     }
   }
 

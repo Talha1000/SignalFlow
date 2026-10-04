@@ -27,6 +27,10 @@ export async function POST(request: Request) {
       return apiError("Authentication required (Cookie session or Bearer API key)", 401, "UNAUTHORIZED");
     }
 
+    if (caller.isApiKey && !caller.permissions?.includes("write")) {
+      return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+    }
+
     const body: SignalPayload = await request.json();
 
     if (!body.domain || !body.signalType) {
@@ -59,6 +63,14 @@ export async function POST(request: Request) {
       case "EMAIL_REPLY":
         actType = ActivityType.EMAIL_REPLY;
         factorDescription = "Prospect replied to email sequence";
+        break;
+      case "GITHUB_STAR":
+        actType = ActivityType.DOCS_VIEW;
+        factorDescription = "Developer starred repository; open-source product adoption signal";
+        break;
+      case "EXECUTIVE_HIRE":
+        actType = ActivityType.PAGE_VIEW;
+        factorDescription = "Executive hire announced; organizational budget expansion signal";
         break;
       default:
         actType = ActivityType.PAGE_VIEW;

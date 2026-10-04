@@ -34,6 +34,9 @@ export interface ScoreResult {
   negativeFactors: ScoreFactor[];
   scoreChange7d: number;
   explanation: string;
+  /** Heuristic signal coverage ratio measuring corroborating evidence (0.0 to 1.0) */
+  evidenceStrength: number;
+  /** Backward-compatible alias for database column LeadScore.confidence */
   confidence: number;
 }
 
@@ -119,6 +122,8 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
   let emailOpens = 0;
   let emailClicks = 0;
   let emailReplies = 0;
+  let githubStars = 0;
+  let executiveHires = 0;
   let recent7dCount = 0;
   let oldestActivityDate = now;
   let newestActivityDate = 0;
@@ -130,6 +135,15 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
 
     if (now - actTime <= sevenDays) {
       recent7dCount++;
+    }
+
+    const titleLower = (act.title || "").toLowerCase();
+    const descLower = (act.description || "").toLowerCase();
+    if (titleLower.includes("github") || descLower.includes("github") || descLower.includes("starred")) {
+      githubStars++;
+    }
+    if (titleLower.includes("executive hire") || descLower.includes("executive hire") || descLower.includes("leadership")) {
+      executiveHires++;
     }
 
     switch (act.type) {
@@ -187,6 +201,28 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
       points: pts,
       category: "behavior",
       description: "Assessing implementation feasibility and tenant isolation.",
+    });
+  }
+
+  if (githubStars > 0) {
+    const pts = 8;
+    baseScore += pts;
+    positiveFactors.push({
+      name: "GitHub Repository Star",
+      points: pts,
+      category: "behavior",
+      description: "Developer-led organic adoption and open-source tooling engagement.",
+    });
+  }
+
+  if (executiveHires > 0) {
+    const pts = 15;
+    baseScore += pts;
+    positiveFactors.push({
+      name: "Executive Leadership Expansion",
+      points: pts,
+      category: "company",
+      description: "Leadership hiring signals organizational budget surge and active strategic initiatives.",
     });
   }
 
@@ -286,7 +322,8 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     explanation = `Low intent or cold prospect. Limited interaction signals detected. Recommended for automated drip nurture rather than direct sales rep outreach.`;
   }
 
-  const confidence = Math.min(0.98, Math.max(0.65, 0.7 + positiveFactors.length * 0.05));
+  // Evidence coverage score: reflects coverage of corroborating signals (heuristic, not black-box probability)
+  const evidenceStrength = Number(Math.min(0.98, Math.max(0.65, 0.7 + positiveFactors.length * 0.05)).toFixed(2));
 
   return {
     score: finalScore,
@@ -295,6 +332,7 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     negativeFactors,
     scoreChange7d,
     explanation,
-    confidence: Number(confidence.toFixed(2)),
+    evidenceStrength,
+    confidence: evidenceStrength,
   };
 }

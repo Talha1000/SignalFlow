@@ -14,6 +14,10 @@ export async function GET(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
+    if (caller.isApiKey && !caller.permissions?.includes("read")) {
+      return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+    }
+
     const automations = await prisma.automation.findMany({
       where: { workspaceId: caller.workspaceId },
       include: {
@@ -38,6 +42,10 @@ export async function POST(request: Request) {
     const caller = await resolveCaller(request);
     if (!caller) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
+    }
+
+    if (caller.isApiKey && !caller.permissions?.includes("write")) {
+      return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
     }
 
     const body = await request.json();

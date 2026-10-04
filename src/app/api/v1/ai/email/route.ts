@@ -15,6 +15,10 @@ export async function POST(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
+    if (caller.isApiKey && !caller.permissions?.includes("write")) {
+      return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+    }
+
     const { leadId, tone = "consultative", customInstructions } = await request.json();
 
     if (!leadId) {

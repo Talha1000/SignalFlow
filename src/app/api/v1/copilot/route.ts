@@ -15,6 +15,10 @@ export async function POST(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
+    if (caller.isApiKey && !caller.permissions?.includes("read")) {
+      return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+    }
+
     const { query } = await request.json();
     if (!query || typeof query !== "string" || query.trim().length === 0) {
       return apiError("A valid query string is required", 400, "VALIDATION_FAILED");

@@ -28,7 +28,7 @@ export class AIService {
 
   private constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
-    this.modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    this.modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     if (apiKey && apiKey.trim().length > 0) {
       this.geminiClient = new GoogleGenerativeAI(apiKey);
     }
@@ -193,7 +193,7 @@ Return strictly JSON with keys "subject" and "body". Do not use markdown backtic
     const tones = {
       professional: {
         subject: `Prioritizing revenue signals at ${sanitizedCompany}`,
-        body: `Hi ${sanitizedFirst},\n\nI noticed your team at ${sanitizedCompany} has been exploring real-time customer signal capture and lead prioritization.\n\nMost ${sanitizedTitle.toLowerCase()}s find that sales reps spend up to 60% of their week chasing low-intent inquiries while key opportunities wait.\n\nWould you have 15 minutes this Thursday for a brief walkthrough of how SignalFlow automates priority queues?\n\nBest regards,\nSignalFlow Revenue Team`,
+        body: `Hi ${sanitizedFirst},\n\nI noticed your team at ${sanitizedCompany} has been exploring real-time customer signal capture and lead prioritization.\n\nSignalFlow helps revenue teams automatically surface high-intent accounts and route them based on verified engagement events like documentation and pricing views.\n\nWould you have 15 minutes this Thursday for a brief walkthrough of how SignalFlow prioritizes inbound accounts?\n\nBest regards,\nSignalFlow Revenue Team`,
       },
       direct: {
         subject: `Quick question re: ${sanitizedCompany}'s evaluation`,
@@ -201,7 +201,7 @@ Return strictly JSON with keys "subject" and "body". Do not use markdown backtic
       },
       consultative: {
         subject: `Accelerating high-intent conversion at ${sanitizedCompany}`,
-        body: `Hi ${sanitizedFirst},\n\nGiven your focus on operations at ${sanitizedCompany}, I wanted to share how similar teams identify buying intent 3x faster.\n\nWhen multiple stakeholders begin reviewing security and pricing docs, our explainable scoring engine routes the opportunity immediately so your team can strike while interest is peaked.\n\nOpen to discussing how this maps to your current workflow?\n\nCheers,\nSignalFlow`,
+        body: `Hi ${sanitizedFirst},\n\nGiven your focus at ${sanitizedCompany}, I wanted to share how revenue teams identify buying intent earlier in the evaluation cycle.\n\nWhen multiple stakeholders begin reviewing security and pricing docs, our explainable scoring engine routes the opportunity immediately so your team can engage while interest is high.\n\nOpen to discussing how this maps to your current workflow?\n\nCheers,\nSignalFlow`,
       },
       technical: {
         subject: `SignalFlow tenant isolation & webhook architecture for ${sanitizedCompany}`,

@@ -19,7 +19,11 @@ export async function GET(
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (!PERMISSIONS.VIEW_LEADS(caller.role)) {
+    if (caller.isApiKey && !caller.permissions?.includes("read")) {
+      return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+    }
+
+    if (!caller.isApiKey && !PERMISSIONS.VIEW_LEADS(caller.role)) {
       return apiError("Insufficient permissions to view leads", 403, "FORBIDDEN");
     }
 
@@ -76,7 +80,11 @@ export async function PATCH(
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (!PERMISSIONS.EDIT_LEAD(caller.role)) {
+    if (caller.isApiKey && !caller.permissions?.includes("write")) {
+      return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+    }
+
+    if (!caller.isApiKey && !PERMISSIONS.EDIT_LEAD(caller.role)) {
       return apiError("Insufficient permissions to update leads", 403, "FORBIDDEN");
     }
 
@@ -98,7 +106,25 @@ export async function PATCH(
 
     const updateData: any = {};
     if (body.stage) updateData.stage = body.stage as LeadStage;
-    if (body.ownerId !== undefined) updateData.ownerId = body.ownerId || null;
+
+    // Strict Cross-Tenant Defense: Verify ownerId is an active member of caller's workspace
+    if (body.ownerId !== undefined) {
+      if (body.ownerId) {
+        const isMember = await prisma.workspaceMember.findFirst({
+          where: {
+            userId: body.ownerId,
+            workspaceId: caller.workspaceId,
+          },
+        });
+        if (!isMember) {
+          return apiError("Assigned owner must be an active member of this workspace", 400, "INVALID_OWNER");
+        }
+        updateData.ownerId = body.ownerId;
+      } else {
+        updateData.ownerId = null;
+      }
+    }
+
     if (body.dealValue !== undefined) updateData.dealValue = Number(body.dealValue);
     if (body.nextAction !== undefined) updateData.nextAction = body.nextAction;
     if (body.nextActionDue !== undefined) updateData.nextActionDue = body.nextActionDue ? new Date(body.nextActionDue) : null;
@@ -161,7 +187,11 @@ export async function DELETE(
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (!PERMISSIONS.DELETE_LEAD(caller.role)) {
+    if (caller.isApiKey && (!caller.permissions?.includes("write") || !caller.permissions?.includes("admin"))) {
+      return apiError("API key lacks required write/admin permissions", 403, "FORBIDDEN");
+    }
+
+    if (!caller.isApiKey && !PERMISSIONS.DELETE_LEAD(caller.role)) {
       return apiError("Insufficient permissions to delete leads", 403, "FORBIDDEN");
     }
 
