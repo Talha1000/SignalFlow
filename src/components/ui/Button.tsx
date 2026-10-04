@@ -22,17 +22,17 @@ export function Button({
 
   const variants = {
     primary:
-      "bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold shadow-sm shadow-cyan-500/20 focus:ring-cyan-400",
+      "bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-sm hover:shadow-md shadow-blue-600/20 active:scale-[0.98] border border-blue-500/30 focus:ring-blue-500",
     secondary:
-      "bg-slate-800 text-slate-100 hover:bg-slate-700/80 border border-slate-700/60 focus:ring-slate-400",
+      "bg-slate-800 text-slate-100 hover:bg-slate-700/90 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/90 border border-slate-700/80 light:bg-slate-100 light:text-slate-800 light:border-slate-300 light:hover:bg-slate-200 focus:ring-slate-400",
     outline:
-      "border border-slate-700/80 bg-transparent text-slate-200 hover:bg-slate-800/60 hover:text-white focus:ring-cyan-500",
+      "border border-slate-700/80 bg-transparent text-slate-200 hover:bg-slate-800/60 hover:text-white dark:border-slate-700/80 dark:text-slate-200 dark:hover:bg-slate-800/60 light:border-slate-300 light:text-slate-700 light:hover:bg-slate-100 focus:ring-blue-500",
     ghost:
-      "bg-transparent text-slate-300 hover:bg-slate-800/60 hover:text-white focus:ring-slate-400",
+      "bg-transparent text-slate-300 hover:bg-slate-800/60 hover:text-white dark:text-slate-300 dark:hover:bg-slate-800/60 light:text-slate-600 light:hover:bg-slate-100 light:hover:text-slate-900 focus:ring-slate-400",
     destructive:
       "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 focus:ring-red-500",
     gradient:
-      "bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500 text-slate-950 font-semibold hover:opacity-90 shadow-lg shadow-cyan-500/25 focus:ring-cyan-400",
+      "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-md shadow-blue-600/25 hover:shadow-lg hover:shadow-blue-600/35 border border-blue-400/20 focus:ring-blue-500",
   };
 
   const sizes = {

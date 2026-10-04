@@ -36,8 +36,8 @@ export function ScoreBadge({ score }: { score: number }) {
   let color = "text-zinc-400 bg-zinc-800/80 border-zinc-700";
   if (score >= 85) color = "text-red-400 bg-red-500/10 border-red-500/30 font-bold";
   else if (score >= 70) color = "text-amber-400 bg-amber-500/10 border-amber-500/30 font-semibold";
-  else if (score >= 50) color = "text-cyan-400 bg-cyan-500/10 border-cyan-500/30";
-  else if (score >= 30) color = "text-blue-400 bg-blue-500/10 border-blue-500/30";
+  else if (score >= 50) color = "text-blue-400 bg-blue-500/10 border-blue-500/30";
+  else if (score >= 30) color = "text-slate-400 bg-slate-500/10 border-slate-500/30";
 
   return (
     <span
@@ -95,14 +95,16 @@ export function Badge({
 }: {
   children: React.ReactNode;
   className?: string;
-  variant?: "default" | "success" | "warning" | "danger" | "cyan" | "outline";
+  variant?: "default" | "success" | "warning" | "danger" | "cyan" | "blue" | "brand" | "outline";
 }) {
   const variants = {
     default: "bg-slate-800 text-slate-300 border-slate-700",
     success: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     warning: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     danger: "bg-red-500/10 text-red-400 border-red-500/30",
-    cyan: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
+    cyan: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    blue: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    brand: "bg-blue-500/10 text-blue-400 border-blue-500/30",
     outline: "bg-transparent text-slate-400 border-slate-700",
   };
 

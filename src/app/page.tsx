@@ -49,8 +49,8 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#060913] text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
-      {/* 2027 Futuristic Entrance Preloader */}
+    <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors">
+      {/* Executive Entrance Preloader */}
       <CyberPreloader />
 
       {/* Top Futuristic Navigation */}

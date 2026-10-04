@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Shield, ArrowRight, Sun, Moon, Menu, X, Sparkles } from "lucide-react";
+import { Activity, Shield, ArrowRight, Sun, Moon, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
@@ -22,25 +22,21 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#080c14]/85 dark:border-slate-800/80 dark:bg-[#080c14]/85 light:border-slate-200 light:bg-white/90 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 p-0.5 shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-            <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-slate-950">
-              <Activity className="h-5 w-5 text-cyan-400" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-0.5 shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform">
+            <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-slate-950 light:bg-white">
+              <Activity className="h-5 w-5 text-blue-500" />
             </div>
-            <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
-            </span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold tracking-tight text-white light:text-slate-900">
               SignalFlow
-              <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                2027
-              </span>
+            </span>
+            <span className="text-[10px] font-medium tracking-wider uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 light:bg-blue-50 light:text-blue-700 light:border-blue-200">
+              Enterprise
             </span>
           </div>
         </Link>
@@ -53,8 +49,10 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-cyan-400 ${
-                  isActive ? "text-cyan-400 font-semibold" : "text-slate-300"
+                className={`text-sm font-medium transition-colors hover:text-blue-400 light:hover:text-blue-600 ${
+                  isActive
+                    ? "text-blue-400 light:text-blue-600 font-semibold"
+                    : "text-slate-300 light:text-slate-600"
                 }`}
               >
                 {link.label}
@@ -67,8 +65,9 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-            title="Toggle theme"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 light:text-slate-600 light:hover:text-slate-900 light:hover:bg-slate-100 transition-colors"
+            title="Toggle color theme"
+            aria-label="Toggle color theme"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
@@ -80,8 +79,8 @@ export function Navbar() {
           </Link>
 
           <Link href="/signup">
-            <Button variant="gradient" size="sm" className="gap-1.5">
-              Start Free <ArrowRight className="h-3.5 w-3.5" />
+            <Button variant="primary" size="sm" className="gap-1.5 font-semibold">
+              Get Started <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>
@@ -90,13 +89,15 @@ export function Navbar() {
         <div className="flex items-center gap-2 md:hidden">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-200"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 light:text-slate-600 light:hover:text-slate-900"
+            aria-label="Toggle theme"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 text-slate-300 hover:text-white"
+            className="p-2 text-slate-300 hover:text-white light:text-slate-700 light:hover:text-slate-900"
+            aria-label="Toggle navigation menu"
           >
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -105,26 +106,26 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden border-b border-slate-800 bg-slate-900/95 px-4 pt-3 pb-6 space-y-3">
+        <div className="md:hidden border-b border-slate-800 bg-[#0c1220] light:bg-white light:border-slate-200 px-4 pt-3 pb-6 space-y-3 shadow-xl">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setMobileOpen(false)}
-              className="block py-2 text-sm font-medium text-slate-200 hover:text-cyan-400"
+              className="block py-2 text-sm font-medium text-slate-200 light:text-slate-700 hover:text-blue-400 light:hover:text-blue-600"
             >
               {link.label}
             </Link>
           ))}
-          <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
+          <div className="pt-4 border-t border-slate-800 light:border-slate-200 flex flex-col gap-2">
             <Link href="/login" onClick={() => setMobileOpen(false)}>
-              <Button variant="outline" className="w-full justify-center">
+              <Button variant="ghost" size="sm" className="w-full justify-center">
                 Sign In
               </Button>
             </Link>
             <Link href="/signup" onClick={() => setMobileOpen(false)}>
-              <Button variant="gradient" className="w-full justify-center">
-                Start Free
+              <Button variant="primary" size="sm" className="w-full justify-center gap-1.5 font-semibold">
+                Get Started <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
           </div>
