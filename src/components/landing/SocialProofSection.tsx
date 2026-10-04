@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Star, CheckCircle2, TrendingUp, ShieldCheck } from "lucide-react";
+import { Star, CheckCircle2, TrendingUp } from "lucide-react";
 
 export function SocialProofSection() {
   const testimonials = [
@@ -35,60 +35,60 @@ export function SocialProofSection() {
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden bg-slate-950 light:bg-slate-50 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-300 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-700 text-xs font-semibold tracking-wide mb-4">
-            <Star className="h-3.5 w-3.5 text-emerald-400 light:text-emerald-600 fill-emerald-400" />
-            <span>EXECUTIVE TESTIMONIALS</span>
+    <section className="py-28 relative overflow-hidden bg-[#121212] light:bg-[#f7f7f7] transition-colors">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 light:border-black/15 bg-[#1e2224] light:bg-white text-slate-300 light:text-[#121212] text-xs font-mono uppercase tracking-widest mb-4 shadow-xs">
+            <Star className="h-3.5 w-3.5 text-[#f2be01] fill-[#f2be01]" />
+            <span>EXECUTIVE SOCIAL PROOF</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white light:text-slate-900 tracking-tight">
+          <h2 className="text-4xl sm:text-6xl font-black text-white light:text-[#121212] tracking-tight leading-tight">
             Trusted by Modern{" "}
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400 light:from-emerald-600 light:via-teal-600 light:to-blue-700 bg-clip-text text-transparent">
+            <span className="text-[#38b6ff] light:text-[#0284c7]">
               Revenue Leaders
             </span>
           </h2>
-          <p className="mt-4 text-slate-300 light:text-slate-600 text-base sm:text-lg">
+          <p className="mt-4 text-slate-300 light:text-[#4a5053] text-base sm:text-lg">
             See how high-performing revenue organizations replace blind guesswork with signal-driven execution.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {testimonials.map((t, idx) => (
             <div
               key={idx}
-              className="rounded-3xl border border-slate-800 light:border-slate-200 bg-slate-900/60 light:bg-white p-6 sm:p-8 backdrop-blur-xl flex flex-col justify-between hover:border-blue-500/40 transition-all shadow-sm"
+              className="rounded-3xl border border-white/15 light:border-black/15 bg-[#1e2224] light:bg-white p-8 sm:p-10 flex flex-col justify-between hover:border-[#38b6ff]/40 light:hover:border-black/30 transition-all shadow-sm"
             >
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex text-amber-400">
+                  <div className="flex text-[#f2be01]">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      <Star key={i} className="h-4 w-4 fill-[#f2be01] text-[#f2be01]" />
                     ))}
                   </div>
-                  <span className="text-[11px] font-mono text-emerald-400 light:text-emerald-700 bg-emerald-500/10 light:bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-500/20 light:border-emerald-200 font-semibold flex items-center gap-1">
+                  <span className="text-[11px] font-mono text-[#10b981] bg-[#10b981]/10 px-2.5 py-0.5 rounded-full border border-[#10b981]/20 font-bold flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" /> {t.metric}
                   </span>
                 </div>
 
-                <p className="text-sm text-slate-300 light:text-slate-700 leading-relaxed italic">
+                <p className="text-sm text-slate-300 light:text-[#4a5053] leading-relaxed italic">
                   "{t.quote}"
                 </p>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-slate-800/80 light:border-slate-200 flex items-center gap-3">
+              <div className="pt-6 mt-6 border-t border-white/10 light:border-black/10 flex items-center gap-4">
                 <img
                   src={t.avatar}
                   alt={t.author}
-                  className="h-10 w-10 rounded-full object-cover border border-slate-700 light:border-slate-300"
+                  className="h-11 w-11 rounded-full object-cover border border-white/15 light:border-black/15"
                 />
                 <div>
-                  <div className="text-sm font-bold text-white light:text-slate-900 flex items-center gap-1.5">
+                  <div className="text-sm font-bold text-white light:text-[#121212] flex items-center gap-1.5">
                     {t.author}
-                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 light:text-blue-600" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
                   </div>
-                  <div className="text-xs text-slate-400 light:text-slate-500">
-                    {t.role} • <span className="text-slate-300 light:text-slate-700 font-medium">{t.company}</span>
+                  <div className="text-xs text-slate-400 light:text-[#787e82]">
+                    {t.role} • <span className="text-slate-300 light:text-[#121212] font-semibold">{t.company}</span>
                   </div>
                 </div>
               </div>

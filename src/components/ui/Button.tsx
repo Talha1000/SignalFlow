@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "destructive" | "gradient";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "destructive" | "gradient" | "pill";
   size?: "sm" | "md" | "lg" | "icon";
   loading?: boolean;
 }
@@ -18,28 +18,30 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:pointer-events-none rounded-lg select-none active:scale-[0.98]";
+    "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none select-none active:scale-[0.98]";
 
   const variants = {
     primary:
-      "bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-sm hover:shadow-md shadow-blue-600/20 active:scale-[0.98] border border-blue-500/30 focus:ring-blue-500",
+      "bg-white text-[#121212] hover:bg-slate-200 dark:bg-white dark:text-[#121212] dark:hover:bg-slate-200 light:bg-[#121212] light:text-white light:hover:bg-black font-semibold rounded-full shadow-sm focus:ring-[#38b6ff]",
+    pill:
+      "bg-[#38b6ff] text-[#121212] hover:bg-[#34feff] dark:bg-[#38b6ff] dark:text-[#121212] dark:hover:bg-[#34feff] light:bg-[#0284c7] light:text-white light:hover:bg-[#0369a1] font-semibold rounded-full shadow-sm focus:ring-[#38b6ff]",
     secondary:
-      "bg-slate-800 text-slate-100 hover:bg-slate-700/90 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/90 border border-slate-700/80 light:bg-slate-100 light:text-slate-800 light:border-slate-300 light:hover:bg-slate-200 focus:ring-slate-400",
+      "bg-[#252a2b] text-white hover:bg-[#2d3234] dark:bg-[#252a2b] dark:text-white dark:hover:bg-[#2d3234] light:bg-[#f0f2f3] light:text-[#121212] light:hover:bg-[#e4e6e8] border border-white/10 light:border-black/10 rounded-full focus:ring-[#38b6ff]",
     outline:
-      "border border-slate-700/80 bg-transparent text-slate-200 hover:bg-slate-800/60 hover:text-white dark:border-slate-700/80 dark:text-slate-200 dark:hover:bg-slate-800/60 light:border-slate-300 light:text-slate-700 light:hover:bg-slate-100 focus:ring-blue-500",
+      "bg-transparent text-white dark:text-white light:text-[#121212] border border-white/20 dark:border-white/20 light:border-black/20 hover:bg-white/10 light:hover:bg-black/5 rounded-full focus:ring-[#38b6ff]",
     ghost:
-      "bg-transparent text-slate-300 hover:bg-slate-800/60 hover:text-white dark:text-slate-300 dark:hover:bg-slate-800/60 light:text-slate-600 light:hover:bg-slate-100 light:hover:text-slate-900 focus:ring-slate-400",
+      "bg-transparent text-slate-300 dark:text-slate-300 light:text-[#4a5053] hover:text-white dark:hover:text-white light:hover:text-[#121212] hover:bg-white/5 light:hover:bg-black/5 rounded-full focus:ring-[#38b6ff]",
     destructive:
-      "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 focus:ring-red-500",
+      "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 rounded-full focus:ring-red-500",
     gradient:
-      "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-md shadow-blue-600/25 hover:shadow-lg hover:shadow-blue-600/35 border border-blue-400/20 focus:ring-blue-500",
+      "bg-gradient-to-r from-[#38b6ff] to-[#0284c7] text-[#121212] font-semibold hover:opacity-95 shadow-md rounded-full focus:ring-[#38b6ff]",
   };
 
   const sizes = {
-    sm: "text-xs px-2.5 py-1.5 gap-1.5",
-    md: "text-sm px-4 py-2 gap-2",
-    lg: "text-base px-5 py-2.5 gap-2.5",
-    icon: "h-9 w-9 p-0",
+    sm: "text-xs px-3.5 py-1.5 gap-1.5",
+    md: "text-sm px-5 py-2.5 gap-2",
+    lg: "text-base px-6 py-3 gap-2.5",
+    icon: "h-9 w-9 p-0 rounded-full",
   };
 
   return (

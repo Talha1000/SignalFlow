@@ -2,212 +2,310 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Share2,
-  Cpu,
-  Send,
-  CheckCircle2,
-  Layers,
-  ArrowRight,
-} from "lucide-react";
+import { Activity, Cpu, Send, Layers, ArrowRight, ShieldCheck, Database, Zap, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
-export function WorkflowTabsSection() {
-  const [activeStep, setActiveStep] = useState(0);
+interface SectorTab {
+  id: string;
+  name: string;
+  color: string;
+  lightColor: string;
+  leadHeading: string;
+  leadParagraph: string;
+  cards: {
+    title: string;
+    description: string;
+    stat: string;
+    statLabel: string;
+  }[];
+  codeSnippet: string;
+}
 
-  const steps = [
-    {
-      id: "ingest",
-      number: "01",
-      title: "Connect & Ingest Signals",
-      subtitle: "Enterprise integrations with zero cookie dependencies",
-      description:
-        "Connect Segment, Stripe, your website, GitHub, or API webhooks in under 60 seconds. SignalFlow listens to anonymous visitor activity, developer docs usage, and company enrichment in real-time.",
-      icon: Share2,
-      preview: {
-        badge: "INGESTION PIPELINE",
-        title: "Real-Time Telemetry Stream",
-        items: [
-          { name: "Segment Webhook", desc: "User triggered 'pricing_modal_opened'", status: "Processed (4ms)" },
-          { name: "Clearbit Reveal", desc: "Domain resolved to Acme Corp (Series B)", status: "Enriched (12ms)" },
-          { name: "GitHub Activity", desc: "3 PRs committed in open-source SDK", status: "Linked (22ms)" },
-        ],
-        codeSnippet: `// Drop-in TypeScript SDK
+const SECTORS: SectorTab[] = [
+  {
+    id: "telemetry",
+    name: "Intent Telemetry",
+    color: "#34FEFF",
+    lightColor: "#007B7C",
+    leadHeading: "Accelerate Pipeline with 1st-Party Intent Telemetry",
+    leadParagraph:
+      "Our edge-computed de-anonymization engine monitors dark-funnel buying patterns across documentation, API sandboxes, and pricing interactions with zero third-party cookie dependencies.",
+    cards: [
+      {
+        title: "Deep Technical Networks",
+        description:
+          "Capture anonymous IP and session activity from high-value accounts evaluating your architecture, pricing models, and security compliance.",
+        stat: "18,500+",
+        statLabel: "Signals / Sec Ingested",
+      },
+      {
+        title: "Zero-Cookie Accuracy",
+        description:
+          "100% compliant with GDPR, CCPA, and Safari ITP restrictions by leveraging first-party server-side telemetry and cryptographic fingerprinting.",
+        stat: "99.99%",
+        statLabel: "Data Freshness SLA",
+      },
+      {
+        title: "Seamless Global Ingestion",
+        description:
+          "Stream events from Segment, Rudderstack, Cloudflare Workers, or our native 4KB TypeScript SDK with sub-10ms delivery latency.",
+        stat: "< 12ms",
+        statLabel: "Ingestion Latency",
+      },
+    ],
+    codeSnippet: `// 1st-Party Edge Ingestion
 import { SignalFlow } from "@signalflow/sdk";
 
-SignalFlow.track("viewed_enterprise_pricing", {
-  userId: "usr_942",
-  companyDomain: "acmetech.io"
+SignalFlow.ingest({
+  event: "high_intent_pricing_toggle",
+  metadata: {
+    tier: "enterprise_annual",
+    sessionDepth: 7,
+    securityWhitepaperDownloaded: true
+  }
 });`,
+  },
+  {
+    id: "ai-scoring",
+    name: "Behavioral AI",
+    color: "#38B6FF",
+    lightColor: "#0284c7",
+    leadHeading: "Deterministic Lead Scoring with Explainable Machine Learning",
+    leadParagraph:
+      "Eliminate sales guesswork. SignalFlow calculates ICP fit, intent velocity, and buying committee recency—giving your team a transparent point-by-point score breakdown.",
+    cards: [
+      {
+        title: "Multi-Persona Attribution",
+        description:
+          "Detect when multiple stakeholders from the same enterprise (Engineering, VP Finance, Procurement) converge on your digital properties within a 48-hour window.",
+        stat: "94.2%",
+        statLabel: "Predictive Win Accuracy",
       },
-    },
-    {
-      id: "score",
-      number: "02",
-      title: "Synthesize & Explain Score",
-      subtitle: "Deterministic AI attribution with zero hallucination",
-      description:
-        "Our mathematical scoring engine evaluates seniority, intent velocity, ICP fit, and recency decay. Leads surge from Cold to Hot with a human-readable explanation of why they are ready to buy.",
-      icon: Cpu,
-      preview: {
-        badge: "DETERMINISTIC ATTRIBUTION",
-        title: "Explainable Mathematical Score",
-        items: [
-          { name: "Fit Score: 48/50", desc: "Enterprise SaaS, 450+ headcount, $65M ARR", status: "Optimal ICP" },
-          { name: "Intent Velocity: 46/50", desc: "3 team members active on pricing in 24h", status: "Surging +22" },
-          { name: "Decision Urgency: HIGH", desc: "Contract expiration flagged in 45 days", status: "Priority 1" },
-        ],
-        codeSnippet: `// Explainable Score Breakdown
+      {
+        title: "Mathematical Intent Decay",
+        description:
+          "Intent cools rapidly. Our dynamic decay algorithms prioritize surging in-market prospects over stale accounts that haven't visited in 30 days.",
+        stat: "3.8x",
+        statLabel: "Pipeline Velocity",
+      },
+      {
+        title: "Explainable Factor Matrix",
+        description:
+          "Every score is transparent. Reps see exactly why an account scored 94/100, including persona seniority, pricing triggers, and contract timeline signals.",
+        stat: "100%",
+        statLabel: "Deterministic Auditing",
+      },
+    ],
+    codeSnippet: `// Explainable AI Attribution Engine
 {
-  "totalScore": 94,
+  "account": "Stripe Technologies",
+  "calculatedScore": 96,
+  "confidence": "Optimal ICP",
   "factors": [
-    { "factor": "Executive VP Authority", "pts": +20 },
-    { "factor": "Enterprise Pricing 3x", "pts": +18 },
-    { "factor": "SDK Sandbox Setup", "pts": +15 }
+    { "factor": "VP Engineering Authority", "pts": +30 },
+    { "factor": "Enterprise Security Audit Check", "pts": +25 },
+    { "factor": "3 Active Team Members (24h)", "pts": +20 }
   ]
 }`,
+  },
+  {
+    id: "autonomous-cadence",
+    name: "Autonomous Outbound",
+    color: "#FF914D",
+    lightColor: "#e06c27",
+    leadHeading: "Instant Multi-Channel Engagement Before Intent Cools",
+    leadParagraph:
+      "When enterprise accounts cross high-intent thresholds, SignalFlow triggers hyper-tailored outbound communications and alerts account executives via Slack in under 90 seconds.",
+    cards: [
+      {
+        title: "Contextual AI Copilot",
+        description:
+          "Draft hyper-relevant outreach that references the exact technical documentation and features the prospective buying committee was evaluating.",
+        stat: "< 90s",
+        statLabel: "Time-to-Engagement",
       },
-    },
-    {
-      id: "execute",
-      number: "03",
-      title: "Autonomous Action & Close",
-      subtitle: "Turn signals into meetings before leads go cold",
-      description:
-        "Trigger immediate high-touch executive cadences, dispatch Slack alerts to dedicated account owners, or let the AI Copilot draft a personalized multi-channel follow-up tailored to the prospect's exact research history.",
-      icon: Send,
-      preview: {
-        badge: "AUTONOMOUS EXECUTION",
-        title: "Action Dispatcher",
-        items: [
-          { name: "Slack Urgent Alert", desc: "Sent to #sales-hot-leads with instant claim button", status: "Delivered" },
-          { name: "Cadence Sequence #4", desc: "Personalized architecture review email queued", status: "Sent" },
-          { name: "Safety Protocol", desc: "Auto-halts sequence instantly upon prospect reply", status: "Listening" },
-        ],
-        codeSnippet: `// AI Copilot Tailored Outreach
-"Sarah, noticed your team was reviewing our multi-tenant
-SSO architecture earlier today. Would you like a private 
-sandbox cluster and our SOC2 Type II audit packet?"`,
+      {
+        title: "Collision Safety Protocols",
+        description:
+          "Auto-pauses sequences immediately when an account replies or already has an active sales opportunity in Salesforce or HubSpot.",
+        stat: "0%",
+        statLabel: "Outbound Collisions",
       },
-    },
-  ];
+      {
+        title: "Slack Real-Time Claiming",
+        description:
+          "Deliver actionable notifications to dedicated AE channels with one-click lead claiming, LinkedIn profile deep links, and pre-drafted email copies.",
+        stat: "62%",
+        statLabel: "AE Claim Rate < 5m",
+      },
+    ],
+    codeSnippet: `// Autonomous Outbound Cadence Dispatch
+await SignalFlow.cadences.dispatch({
+  leadId: "lead_enterprise_418",
+  channel: "email_and_slack",
+  template: "executive_architecture_review",
+  autoHaltOnReply: true
+});`,
+  },
+  {
+    id: "crm-sync",
+    name: "CRM Synchronization",
+    color: "#F2BE01",
+    lightColor: "#b88600",
+    leadHeading: "Bi-Directional Synchronization Across Modern Revenue Stacks",
+    leadParagraph:
+      "Maintain absolute source-of-truth across your CRM, data warehouse, and messaging applications with enterprise-grade webhooks and field mapping.",
+    cards: [
+      {
+        title: "Native Salesforce & HubSpot Sync",
+        description:
+          "Map enriched intent scores, company firmographics, and verified contact emails directly to standard or custom CRM fields automatically.",
+        stat: "Bi-directional",
+        statLabel: "Real-time Delta Sync",
+      },
+      {
+        title: "Snowflake & BigQuery Streaming",
+        description:
+          "Replicate raw intent events to your cloud data warehouse for deeper business intelligence and custom revenue reporting.",
+        stat: "Sub-Minute",
+        statLabel: "Warehouse Replication",
+      },
+      {
+        title: "Role-Based Access Governance",
+        description:
+          "Enforce strict least-privilege permissions, SSO authentication, and complete immutable audit logs across your sales organization.",
+        stat: "SOC-2",
+        statLabel: "Type II Certified",
+      },
+    ],
+    codeSnippet: `// Bi-Directional CRM Sync Stream
+const syncResult = await SignalFlow.crm.sync({
+  destination: "Salesforce",
+  recordType: "Account",
+  updateFields: ["Intent_Score__c", "Surge_Status__c", "Last_Intent_Date__c"]
+});`,
+  },
+];
 
-  const current = steps[activeStep];
+export function WorkflowTabsSection() {
+  const [activeTab, setActiveTab] = useState(0);
+  const current = SECTORS[activeTab];
 
   return (
-    <section className="py-24 relative overflow-hidden bg-slate-950/80 light:bg-slate-50/80 border-t border-slate-800/80 light:border-slate-200 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/25 bg-blue-500/10 text-blue-300 light:border-blue-200 light:bg-blue-50 light:text-blue-700 text-xs font-semibold tracking-wide mb-4">
-            <Layers className="h-3.5 w-3.5 text-blue-400 light:text-blue-600" />
-            <span>ENTERPRISE WORKFLOW</span>
+    <section id="sectors" className="py-24 md:py-32 relative overflow-hidden bg-[#121212] light:bg-[#f7f7f7] border-t border-white/10 light:border-black/10 transition-colors">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        {/* Section Header: "What We Do / We are SignalFlow" */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end mb-16">
+          <div className="md:col-span-7">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 light:bg-black/5 border border-white/10 light:border-black/10 text-slate-300 light:text-[#121212] text-xs font-mono uppercase tracking-widest mb-4">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#34feff] light:bg-[#007b7c]" />
+              <span>What We Do</span>
+            </div>
+            <h2 className="text-4xl sm:text-6xl font-black text-white light:text-[#121212] tracking-tight leading-tight">
+              We are SignalFlow.
+            </h2>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white light:text-slate-900 tracking-tight">
-            From Raw Telemetry to{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 light:from-blue-600 light:via-indigo-600 light:to-blue-800 bg-clip-text text-transparent">
-              Closed Revenue in 3 Steps
-            </span>
-          </h2>
-          <p className="mt-4 text-slate-300 light:text-slate-600 text-base sm:text-lg">
-            See how the entire loop happens seamlessly without manual CRM entry or spreadsheet gymnastics.
-          </p>
+          <div className="md:col-span-5">
+            <p className="text-base sm:text-lg text-slate-300 light:text-[#4a5053] leading-relaxed">
+              The leading revenue intelligence engine connecting innovative companies with real-time buyer intent across web, CRM, and developer activity.
+            </p>
+          </div>
         </div>
 
-        {/* 3 Step Interactive Tab Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-          {steps.map((st, idx) => {
-            const Icon = st.icon;
-            const isActive = activeStep === idx;
-            return (
-              <button
-                key={st.id}
-                onClick={() => setActiveStep(idx)}
-                className={`p-5 rounded-2xl border text-left transition-all ${
-                  isActive
-                    ? "bg-slate-900 light:bg-white border-blue-500/60 light:border-blue-500 shadow-lg shadow-blue-500/10 scale-[1.01]"
-                    : "bg-slate-900/40 light:bg-slate-100/70 border-slate-800 light:border-slate-200 hover:bg-slate-900/70 light:hover:bg-white"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono font-bold text-blue-400 light:text-blue-600">{st.number}</span>
-                  <div
-                    className={`p-2 rounded-lg ${
-                      isActive
-                        ? "bg-blue-500/20 text-blue-300 light:bg-blue-100 light:text-blue-700"
-                        : "bg-slate-800 light:bg-slate-200 text-slate-400 light:text-slate-600"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
+        {/* Floating Sector Tab Navigation */}
+        <div className="relative mb-8">
+          <div
+            className="inline-flex p-1.5 rounded-full bg-[#1e2224] light:bg-white border transition-all duration-300 shadow-md max-w-full overflow-x-auto"
+            style={{ borderColor: current.color }}
+          >
+            {SECTORS.map((sector, idx) => {
+              const isActive = activeTab === idx;
+              return (
+                <button
+                  key={sector.id}
+                  onClick={() => setActiveTab(idx)}
+                  className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold tracking-tight transition-all duration-200 whitespace-nowrap flex items-center gap-2 ${
+                    isActive
+                      ? "text-[#121212] shadow-sm font-bold"
+                      : "text-slate-400 light:text-[#6c7377] hover:text-white light:hover:text-black"
+                  }`}
+                  style={{
+                    backgroundColor: isActive ? sector.color : "transparent",
+                  }}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{
+                      backgroundColor: isActive ? "#121212" : sector.color,
+                    }}
+                  />
+                  <span>{sector.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Active Tab Panel Content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current.id}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3 }}
+            className="p-8 sm:p-12 rounded-[24px] bg-[#1e2224] light:bg-white border border-white/10 light:border-black/10 shadow-xl transition-colors"
+          >
+            {/* Lead Title & Description */}
+            <div className="max-w-3xl mb-12">
+              <h3 className="text-2xl sm:text-4xl font-black text-white light:text-[#121212] tracking-tight leading-snug">
+                {current.leadHeading}
+              </h3>
+              <p className="mt-4 text-base sm:text-lg text-slate-300 light:text-[#4a5053] leading-relaxed">
+                {current.leadParagraph}
+              </p>
+            </div>
+
+            {/* 3 Architectural Feature Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+              {current.cards.map((card, cIdx) => (
+                <div
+                  key={cIdx}
+                  className="p-6 rounded-[20px] bg-[#252a2b] light:bg-[#f7f7f7] border border-white/10 light:border-black/10 hover:border-white/20 light:hover:border-black/20 transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="text-2xl font-black font-mono tracking-tight text-white light:text-[#121212]">
+                      {card.stat}
+                    </div>
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 light:text-[#787e82] mb-4">
+                      {card.statLabel}
+                    </div>
+                    <h4 className="text-lg font-bold text-white light:text-[#121212] tracking-tight mb-2 group-hover:text-[#38b6ff] transition-colors">
+                      {card.title}
+                    </h4>
+                    <p className="text-sm text-slate-300 light:text-[#5a6266] leading-relaxed">
+                      {card.description}
+                    </p>
                   </div>
                 </div>
-                <h3 className="text-base font-bold text-white light:text-slate-900">{st.title}</h3>
-                <p className="text-xs text-slate-400 light:text-slate-600 mt-1">{st.subtitle}</p>
-              </button>
-            );
-          })}
-        </div>
+              ))}
+            </div>
 
-        {/* Detailed Animated Preview Canvas */}
-        <div className="rounded-3xl border border-slate-800 light:border-slate-200 bg-slate-900/90 light:bg-white p-6 sm:p-10 backdrop-blur-xl shadow-2xl relative overflow-hidden transition-colors">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
-            >
-              {/* Left Column: Explanation */}
-              <div className="lg:col-span-5 space-y-4">
-                <span className="text-xs font-mono font-semibold text-blue-400 light:text-blue-600 uppercase tracking-widest">
-                  Step {current.number}
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white light:text-slate-900">{current.title}</h3>
-                <p className="text-sm text-slate-300 light:text-slate-600 leading-relaxed">{current.description}</p>
-                <div className="pt-2">
-                  <span className="inline-flex items-center gap-2 text-xs font-medium text-emerald-400 light:text-emerald-600">
-                    <CheckCircle2 className="h-4 w-4" /> Automated background orchestration
-                  </span>
+            {/* Telemetry Code Inspector Preview */}
+            <div className="rounded-[18px] bg-[#121212] border border-white/10 p-5 overflow-x-auto text-left">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10 text-xs font-mono text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>runtime_telemetry.ts</span>
                 </div>
+                <span className="text-[#38b6ff] font-semibold">Active Execution</span>
               </div>
-
-              {/* Right Column: Code & Visual Telemetry */}
-              <div className="lg:col-span-7 space-y-4">
-                <div className="rounded-2xl border border-slate-800 light:border-slate-200 bg-slate-950 light:bg-slate-50 p-5 space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 light:border-slate-200 pb-3">
-                    <span className="text-xs font-mono text-blue-400 light:text-blue-700 font-semibold">
-                      {current.preview.badge}
-                    </span>
-                    <span className="text-xs text-slate-400 light:text-slate-500">{current.preview.title}</span>
-                  </div>
-
-                  {/* Feed Items */}
-                  <div className="space-y-2">
-                    {current.preview.items.map((it, i) => (
-                      <div
-                        key={i}
-                        className="p-3 rounded-xl bg-slate-900/70 light:bg-white border border-slate-800/90 light:border-slate-200 flex items-center justify-between text-xs shadow-xs"
-                      >
-                        <div>
-                          <div className="font-semibold text-white light:text-slate-900">{it.name}</div>
-                          <div className="text-[11px] text-slate-400 light:text-slate-500">{it.desc}</div>
-                        </div>
-                        <span className="font-mono text-emerald-400 light:text-emerald-600 text-[11px] font-semibold">
-                          {it.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Code snippet block */}
-                  <div className="rounded-xl bg-slate-900/90 light:bg-slate-900 p-3.5 border border-slate-800 light:border-slate-800 font-mono text-[11px] text-blue-300 overflow-x-auto whitespace-pre">
-                    {current.preview.codeSnippet}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              <pre className="text-xs font-mono text-emerald-400/90 leading-relaxed overflow-x-auto">
+                <code>{current.codeSnippet}</code>
+              </pre>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </section>
   );

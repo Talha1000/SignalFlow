@@ -19,42 +19,43 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
 
+  const applyTheme = (t: Theme) => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    if (t === "light") {
+      root.classList.remove("dark");
+      root.classList.add("light");
+      body.classList.remove("dark-mode");
+      body.classList.add("light-mode");
+    } else {
+      root.classList.remove("light");
+      root.classList.add("dark");
+      body.classList.remove("light-mode");
+      body.classList.add("dark-mode");
+    }
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem("signalflow_theme") as Theme | null;
+    const saved = localStorage.getItem("theme") || localStorage.getItem("signalflow_theme");
     const initialTheme: Theme = saved === "light" ? "light" : "dark";
     setThemeState(initialTheme);
-    if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-    } else {
-      document.documentElement.classList.add("light");
-      document.documentElement.classList.remove("dark");
-    }
+    applyTheme(initialTheme);
   }, []);
 
   const toggleTheme = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setThemeState(next);
+    localStorage.setItem("theme", next);
     localStorage.setItem("signalflow_theme", next);
-    if (next === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-    } else {
-      document.documentElement.classList.add("light");
-      document.documentElement.classList.remove("dark");
-    }
+    applyTheme(next);
   };
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
+    localStorage.setItem("theme", t);
     localStorage.setItem("signalflow_theme", t);
-    if (t === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-    } else {
-      document.documentElement.classList.add("light");
-      document.documentElement.classList.remove("dark");
-    }
+    applyTheme(t);
   };
 
   return (

@@ -12,9 +12,7 @@ import {
   Eye,
   FileCode,
   MailCheck,
-  ChevronRight,
   TrendingUp,
-  ShieldCheck,
 } from "lucide-react";
 import { IntentBadge } from "@/components/ui/Badge";
 
@@ -98,30 +96,30 @@ export function LiveSignalSimulator() {
   const currentScore = Math.min(98, selectedLead.initialScore + addedPoints);
 
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-2xl border border-slate-800 light:border-slate-200 bg-[#0c1220]/95 light:bg-white shadow-2xl shadow-blue-950/20 light:shadow-slate-200 backdrop-blur-xl overflow-hidden text-left transition-colors">
-      {/* Simulator Executive Toolbar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 light:border-slate-200 px-4 py-3 bg-slate-900/60 light:bg-slate-50">
-        <div className="flex items-center gap-2">
+    <div className="w-full max-w-4xl mx-auto rounded-3xl border border-white/15 light:border-black/15 bg-[#1e2224] light:bg-white shadow-2xl overflow-hidden text-left transition-colors">
+      {/* Precision Console Chrome Topbar */}
+      <div className="flex flex-wrap items-center justify-between border-b border-white/10 light:border-black/10 px-6 py-4 bg-[#252a2b] light:bg-[#f0f2f3]">
+        <div className="flex items-center gap-2.5">
           <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-slate-700 light:bg-slate-300" />
-            <div className="h-2.5 w-2.5 rounded-full bg-slate-700 light:bg-slate-300" />
-            <div className="h-2.5 w-2.5 rounded-full bg-slate-700 light:bg-slate-300" />
+            <div className="h-2.5 w-2.5 rounded-full bg-white/20 light:bg-black/20" />
+            <div className="h-2.5 w-2.5 rounded-full bg-white/20 light:bg-black/20" />
+            <div className="h-2.5 w-2.5 rounded-full bg-white/20 light:bg-black/20" />
           </div>
-          <span className="text-xs font-mono text-slate-400 light:text-slate-500 pl-2">
-            telemetry://live-signal-engine.enterprise
+          <span className="text-xs font-mono text-slate-400 light:text-[#787e82] pl-2 uppercase tracking-wider">
+            stream://live-telemetry.enterprise
           </span>
         </div>
 
         {/* Lead Account Switcher */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {sampleLeads.map((lead) => (
             <button
               key={lead.id}
               onClick={() => setSelectedLead(lead)}
-              className={`text-xs px-2.5 py-1 rounded-md transition-colors font-medium ${
+              className={`text-xs px-3 py-1 rounded-full transition-all font-mono uppercase tracking-wider font-semibold ${
                 selectedLead.id === lead.id
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 light:text-slate-600 hover:text-slate-200 light:hover:text-slate-900 hover:bg-slate-800/60 light:hover:bg-slate-200/60"
+                  ? "bg-[#38b6ff] text-[#121212] light:bg-[#121212] light:text-white shadow-sm"
+                  : "text-slate-400 light:text-[#4a5053] hover:text-white light:hover:text-[#121212] hover:bg-white/5 light:hover:bg-black/5"
               }`}
             >
               {lead.company.split(" ")[0]}
@@ -131,19 +129,19 @@ export function LiveSignalSimulator() {
       </div>
 
       {/* Simulator Body */}
-      <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+      <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
         {/* Left Column: Account Profile & Realtime Signals */}
-        <div className="md:col-span-7 space-y-4">
+        <div className="md:col-span-7 space-y-5">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-base font-bold text-white light:text-slate-900 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-white light:text-[#121212] flex items-center gap-2">
                 {selectedLead.company}
-                <span className="text-xs font-normal text-slate-400 light:text-slate-500">
+                <span className="text-xs font-mono font-normal text-slate-400 light:text-[#787e82]">
                   ({selectedLead.domain})
                 </span>
               </h3>
-              <p className="text-xs text-slate-400 light:text-slate-600 mt-0.5">
-                {selectedLead.contact} — <span className="text-slate-300 light:text-slate-700 font-medium">{selectedLead.title}</span>
+              <p className="text-xs text-slate-400 light:text-[#4a5053] mt-0.5">
+                {selectedLead.contact} — <span className="text-slate-200 light:text-[#121212] font-semibold">{selectedLead.title}</span>
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -152,32 +150,32 @@ export function LiveSignalSimulator() {
           </div>
 
           {/* Signals Stream */}
-          <div className="space-y-2 pt-2">
-            <div className="flex items-center justify-between text-xs text-slate-400 light:text-slate-500 font-mono">
-              <span className="flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5 text-blue-400 light:text-blue-600 animate-pulse" />
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 light:text-[#787e82] font-mono uppercase tracking-wider">
+              <span className="flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7] animate-pulse" />
                 Live Ingested Signals
               </span>
               <span>{revealedCount} of {selectedLead.signals.length} verified</span>
             </div>
 
-            <div className="space-y-2 min-h-[160px]">
+            <div className="space-y-2.5 min-h-[160px]">
               {selectedLead.signals.slice(0, revealedCount).map((sig, idx) => {
                 const Icon = sig.icon;
                 return (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/70 light:bg-slate-50 border border-slate-800 light:border-slate-200 text-xs text-slate-200 light:text-slate-800 transition-all shadow-sm"
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/5 light:border-black/5 text-xs text-slate-200 light:text-[#121212] transition-all"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1 rounded bg-blue-500/10 text-blue-400 light:text-blue-600">
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 rounded-lg bg-[#1e2224] light:bg-white text-[#38b6ff] light:text-[#0284c7]">
                         <Icon className="h-3.5 w-3.5" />
                       </div>
                       <span className="font-medium">{sig.text}</span>
                     </div>
                     <div className="flex items-center gap-2 font-mono">
-                      <span className="text-emerald-400 light:text-emerald-600 font-semibold">+{sig.pts}</span>
-                      <span className="text-slate-500 text-[10px]">{sig.time}</span>
+                      <span className="text-[#38b6ff] light:text-[#0284c7] font-bold">+{sig.pts}</span>
+                      <span className="text-slate-500 light:text-[#787e82] text-[10px]">{sig.time}</span>
                     </div>
                   </div>
                 );
@@ -187,55 +185,55 @@ export function LiveSignalSimulator() {
         </div>
 
         {/* Right Column: AI Score Evolution & Recommended Play */}
-        <div className="md:col-span-5 flex flex-col justify-between rounded-xl bg-slate-900/50 light:bg-slate-50 border border-slate-800/80 light:border-slate-200 p-4 space-y-4">
+        <div className="md:col-span-5 flex flex-col justify-between rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 p-6 space-y-6">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 light:text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-400 light:text-[#787e82] font-semibold">
                 Deterministic Score
               </span>
-              <span className="text-[10px] font-mono font-semibold text-blue-400 light:text-blue-700 bg-blue-500/10 light:bg-blue-100 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-mono font-bold text-[#38b6ff] light:text-[#0284c7] bg-white/5 light:bg-white px-2 py-0.5 rounded-full border border-white/10 light:border-black/10">
                 +{addedPoints} pts Surge
               </span>
             </div>
 
             {/* Score Big Display */}
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-4xl font-extrabold font-mono tracking-tight text-white light:text-slate-900">
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-5xl font-black font-mono tracking-tight text-white light:text-[#121212]">
                 {currentScore}
               </span>
-              <span className="text-sm font-mono text-slate-500">/ 100</span>
-              <span className="ml-auto text-xs font-semibold text-emerald-400 light:text-emerald-600 flex items-center gap-0.5">
+              <span className="text-sm font-mono text-slate-500 light:text-[#787e82]">/ 100</span>
+              <span className="ml-auto text-xs font-semibold text-[#10b981] flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" /> High Velocity
               </span>
             </div>
 
             {/* Score Meter Bar */}
-            <div className="mt-2.5 h-2 w-full rounded-full bg-slate-800 light:bg-slate-200 overflow-hidden">
+            <div className="mt-3 h-2 w-full rounded-full bg-[#1e2224] light:bg-slate-300 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 transition-all duration-700 rounded-full"
+                className="h-full bg-gradient-to-r from-[#38b6ff] to-[#34feff] light:from-[#0284c7] light:to-[#38b6ff] transition-all duration-700 rounded-full"
                 style={{ width: `${currentScore}%` }}
               />
             </div>
           </div>
 
           {/* AI Recommended Next Action */}
-          <div className="rounded-lg bg-blue-950/30 light:bg-blue-50 border border-blue-800/40 light:border-blue-200 p-3 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-300 light:text-blue-700">
-              <Sparkles className="h-3.5 w-3.5 text-blue-400 light:text-blue-600" />
+          <div className="rounded-xl bg-[#1e2224] light:bg-white border border-white/10 light:border-black/10 p-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#38b6ff] light:text-[#0284c7]">
+              <Sparkles className="h-3.5 w-3.5" />
               Recommended Playbook Touch
             </div>
-            <p className="text-xs text-slate-300 light:text-slate-700 leading-relaxed font-normal">
+            <p className="text-xs text-slate-300 light:text-[#4a5053] leading-relaxed">
               "{selectedLead.aiAction}"
             </p>
           </div>
 
           {/* Automated Sequence Trigger */}
-          <div className="pt-2 border-t border-slate-800/80 light:border-slate-200 flex items-center justify-between text-xs">
-            <span className="text-slate-400 light:text-slate-500 flex items-center gap-1.5 font-medium">
-              <Zap className="h-3.5 w-3.5 text-amber-400 light:text-amber-600" />
+          <div className="pt-2 border-t border-white/10 light:border-black/10 flex items-center justify-between text-xs">
+            <span className="text-slate-400 light:text-[#787e82] flex items-center gap-1.5 font-medium">
+              <Zap className="h-3.5 w-3.5 text-[#f2be01]" />
               Cadence Triggered:
             </span>
-            <span className="font-semibold text-slate-200 light:text-slate-800">Priority Executive Outbound</span>
+            <span className="font-semibold text-white light:text-[#121212]">Executive Outreach</span>
           </div>
         </div>
       </div>

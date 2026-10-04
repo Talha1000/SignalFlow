@@ -35,20 +35,20 @@ export function FaqSection() {
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden bg-slate-950 light:bg-slate-50 transition-colors">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/25 bg-blue-500/10 text-blue-300 light:border-blue-200 light:bg-blue-50 light:text-blue-700 text-xs font-semibold tracking-wide mb-4">
-            <HelpCircle className="h-3.5 w-3.5 text-blue-400 light:text-blue-600" />
+    <section className="py-28 relative overflow-hidden bg-[#121212] light:bg-[#f7f7f7] transition-colors">
+      <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 relative">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 light:border-black/15 bg-[#1e2224] light:bg-white text-slate-300 light:text-[#121212] text-xs font-mono uppercase tracking-widest mb-4 shadow-xs">
+            <HelpCircle className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
             <span>FREQUENTLY ASKED QUESTIONS</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white light:text-slate-900 tracking-tight">
+          <h2 className="text-4xl sm:text-6xl font-black text-white light:text-[#121212] tracking-tight leading-tight">
             Frequently Asked{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-300 light:from-blue-600 light:to-indigo-700 bg-clip-text text-transparent">
+            <span className="text-[#38b6ff] light:text-[#0284c7]">
               Questions
             </span>
           </h2>
-          <p className="mt-4 text-slate-300 light:text-slate-600 text-base sm:text-lg">
+          <p className="mt-4 text-slate-300 light:text-[#4a5053] text-base sm:text-lg">
             Clear answers about data privacy, explainable scoring mathematics, cadence safety, and enterprise integrations.
           </p>
         </div>
@@ -59,15 +59,15 @@ export function FaqSection() {
             return (
               <div
                 key={idx}
-                className="rounded-2xl border border-slate-800 light:border-slate-200 bg-slate-900/60 light:bg-white overflow-hidden transition-all shadow-sm"
+                className="rounded-3xl border border-white/15 light:border-black/15 bg-[#1e2224] light:bg-white overflow-hidden transition-all shadow-sm"
               >
                 <button
                   onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-slate-800/40 light:hover:bg-slate-50 transition-colors"
+                  className="w-full p-7 text-left flex items-center justify-between gap-4 hover:bg-white/5 light:hover:bg-black/5 transition-colors"
                 >
-                  <span className="text-base font-bold text-white light:text-slate-900">{faq.q}</span>
+                  <span className="text-lg font-bold text-white light:text-[#121212]">{faq.q}</span>
                   <ChevronDown
-                    className={`h-5 w-5 text-blue-400 light:text-blue-600 shrink-0 transition-transform duration-200 ${
+                    className={`h-5 w-5 text-[#38b6ff] light:text-[#0284c7] shrink-0 transition-transform duration-200 ${
                       isOpen ? "rotate-180" : ""
                     }`}
                   />
@@ -82,7 +82,7 @@ export function FaqSection() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6 text-sm text-slate-300 light:text-slate-600 leading-relaxed border-t border-slate-800/60 light:border-slate-100 pt-4">
+                      <div className="px-7 pb-7 text-sm text-slate-300 light:text-[#4a5053] leading-relaxed border-t border-white/10 light:border-black/10 pt-5">
                         {faq.a}
                       </div>
                     </motion.div>

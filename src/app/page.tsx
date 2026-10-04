@@ -4,20 +4,18 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { CyberPreloader } from "@/components/ui/CyberPreloader";
+import { EnterpriseMarqueeTicker } from "@/components/landing/EnterpriseMarqueeTicker";
+import { WorkflowTabsSection } from "@/components/landing/WorkflowTabsSection";
+import { CollaborativeSuccessSection } from "@/components/landing/CollaborativeSuccessSection";
 
 // Dynamically split below-the-fold modules for blazing fast initial viewport rendering
-const InteractiveRoiCalculator = dynamic(
-  () => import("@/components/landing/InteractiveRoiCalculator").then((m) => m.InteractiveRoiCalculator),
-  { ssr: true }
-);
-
 const BentoGridSection = dynamic(
   () => import("@/components/landing/BentoGridSection").then((m) => m.BentoGridSection),
   { ssr: true }
 );
 
-const WorkflowTabsSection = dynamic(
-  () => import("@/components/landing/WorkflowTabsSection").then((m) => m.WorkflowTabsSection),
+const InteractiveRoiCalculator = dynamic(
+  () => import("@/components/landing/InteractiveRoiCalculator").then((m) => m.InteractiveRoiCalculator),
   { ssr: true }
 );
 
@@ -28,6 +26,11 @@ const SocialProofSection = dynamic(
 
 const PricingSection = dynamic(
   () => import("@/components/landing/PricingSection").then((m) => m.PricingSection),
+  { ssr: true }
+);
+
+const InsightsSection = dynamic(
+  () => import("@/components/landing/InsightsSection").then((m) => m.InsightsSection),
   { ssr: true }
 );
 
@@ -50,39 +53,56 @@ export const metadata = {
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors">
-      {/* Executive Entrance Preloader */}
+      {/* Entrance Preloader */}
       <CyberPreloader />
 
-      {/* Top Futuristic Navigation */}
+      {/* Top Floating Navigation */}
       <Navbar />
 
       <main className="flex-1">
-        {/* 1. Hero Section with Live Telemetry Simulator & Social Proof */}
+        {/* 1. Hero Section with Sector Color Cycle & Simulator */}
         <HeroSection />
 
-        {/* 2. Interactive Revenue Lift & ROI Modeler */}
-        <InteractiveRoiCalculator />
+        {/* 2. Enterprise Telemetry Marquee Ticker */}
+        <EnterpriseMarqueeTicker />
 
-        {/* 3. 2027 Bento Grid: Telemetry, Radar, Scoring, Auto-Stop Cadences, Security */}
-        <BentoGridSection />
-
-        {/* 4. Interactive 3-Step Live Pipeline Walkthrough */}
+        {/* 3. "What we do / We are SignalFlow" + Sector Tabs */}
         <WorkflowTabsSection />
 
-        {/* 5. Executive Social Proof & Verified Testimonials */}
+        {/* 4. Collaborative Success / Milestone Metrics */}
+        <div id="milestones">
+          <CollaborativeSuccessSection />
+        </div>
+
+        {/* 5. Core Platform Architecture Bento Grid */}
+        <BentoGridSection />
+
+        {/* 6. Interactive ROI & Pipeline Calculator */}
+        <div id="calculator">
+          <InteractiveRoiCalculator />
+        </div>
+
+        {/* 7. Verified Executive Testimonials */}
         <SocialProofSection />
 
-        {/* 6. Transparent Interactive Pricing (Monthly / Annual) */}
-        <PricingSection />
+        {/* 8. Transparent Pricing Matrix */}
+        <div id="pricing">
+          <PricingSection />
+        </div>
 
-        {/* 7. Comprehensive Interactive FAQs */}
+        {/* 9. Editorial Intelligence & Insights Grid */}
+        <div id="insights">
+          <InsightsSection />
+        </div>
+
+        {/* 10. Enterprise FAQ Accordion */}
         <FaqSection />
 
-        {/* 8. Grand Cyber-Portal Final Call to Action */}
+        {/* 11. Grand Final CTA: Empower Revenue Velocity */}
         <FinalCtaSection />
       </main>
 
-      {/* Comprehensive System Footer */}
+      {/* Architectural Enterprise Footer */}
       <Footer />
     </div>
   );
