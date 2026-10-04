@@ -127,20 +127,20 @@ export default async function CompanyDetailPage({
               {company.leads.map((l) => (
                 <div
                   key={l.id}
-                  className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between"
+                  className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 flex items-center justify-between"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/app/leads/${l.id}`}
-                        className="font-bold text-white hover:text-cyan-400"
+                        className="font-bold text-white light:text-[#121212] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"
                       >
                         {l.contact?.firstName} {l.contact?.lastName}
                       </Link>
                       <IntentBadge level={l.intentLevel} />
                       <StageBadge stage={l.stage} />
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-slate-400 light:text-[#787e82]">
                       Owner: {l.owner?.name || "Unassigned"}
                     </div>
                   </div>
@@ -187,15 +187,15 @@ export default async function CompanyDetailPage({
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
+          <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 space-y-3 shadow-sm">
+            <h4 className="font-bold text-white light:text-[#121212] uppercase tracking-wider text-[11px]">
               Detected Tech Stack
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {((company as any).techStack || []).map((t: string) => (
                 <span
                   key={t}
-                  className="px-2 py-0.5 rounded bg-slate-950 text-cyan-300 border border-slate-800 font-mono text-xs"
+                  className="px-2.5 py-0.5 rounded-full bg-[#252a2b] light:bg-[#f0f2f3] text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10 font-mono text-xs"
                 >
                   {t}
                 </span>

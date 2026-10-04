@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { setSessionCookie } from "@/lib/auth/session";
+import { attachSessionCookie, setSessionCookie } from "@/lib/auth/session";
 import { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -45,15 +45,17 @@ export async function POST(request: Request) {
     const wsName = primaryMembership.workspace.name;
     const role = primaryMembership.role;
 
-    await setSessionCookie({
+    const sessionPayload = {
       userId: user.id,
       email: user.email,
       name: user.name,
       workspaceId: wsId,
       role,
-    });
+    };
 
-    return NextResponse.json({
+    await setSessionCookie(sessionPayload, request);
+
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -64,6 +66,10 @@ export async function POST(request: Request) {
         role,
       },
     });
+
+    attachSessionCookie(response, sessionPayload, request);
+
+    return response;
   } catch (error: any) {
     console.error("Login API error:", error);
     return NextResponse.json({ error: "Authentication service unavailable" }, { status: 500 });

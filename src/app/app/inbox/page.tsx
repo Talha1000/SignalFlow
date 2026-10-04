@@ -148,58 +148,58 @@ export default function InboxPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Inbox className="h-6 w-6 text-cyan-400" />
+        <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+          <Inbox className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
           Conversations & Reply Inbox
         </h1>
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-xs text-slate-400 light:text-[#787e82] mt-0.5">
           Prospect replies automatically halt outgoing sequences and classify buyer intent.
         </p>
       </div>
 
-      <div className="flex-1 rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-0">
+      <div className="flex-1 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-0 shadow-sm">
         {/* Left Column: Thread List */}
-        <div className="md:col-span-5 border-r border-slate-800 flex flex-col min-h-0 bg-slate-950/40">
-          <div className="p-3 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between text-xs text-slate-400">
-            <span className="font-semibold text-white">Active Discussions ({threads.length})</span>
-            <span className="text-[10px] font-mono text-cyan-400">Auto-Stop Active</span>
+        <div className="md:col-span-5 border-r border-white/10 light:border-black/10 flex flex-col min-h-0 bg-[#181b1c] light:bg-[#fafafa]">
+          <div className="p-3.5 border-b border-white/10 light:border-black/10 bg-[#1e2224] light:bg-white flex items-center justify-between text-xs text-slate-400 light:text-[#787e82]">
+            <span className="font-semibold text-white light:text-[#121212]">Active Discussions ({threads.length})</span>
+            <span className="text-[10px] font-mono text-[#38b6ff] light:text-[#0284c7]">Auto-Stop Active</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80">
+          <div className="flex-1 overflow-y-auto divide-y divide-white/10 light:divide-black/10">
             {threads.map((t) => (
               <div
                 key={t.id}
                 onClick={() => setSelectedThread(t)}
                 className={`p-4 cursor-pointer transition-colors space-y-1.5 ${
                   selectedThread.id === t.id
-                    ? "bg-slate-800/80 border-l-2 border-cyan-400"
-                    : "hover:bg-slate-900/60"
+                    ? "bg-[#252a2b] light:bg-[#f0f2f3] border-l-2 border-[#38b6ff] light:border-[#0284c7]"
+                    : "hover:bg-[#252a2b]/50 light:hover:bg-[#f0f2f3]/50"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-white flex items-center gap-2">
+                  <span className="font-bold text-xs text-white light:text-[#121212] flex items-center gap-2">
                     {t.sender}
                     <ScoreBadge score={t.score} />
                   </span>
-                  <span className="text-[10px] font-mono text-slate-500">{t.time}</span>
+                  <span className="text-[10px] font-mono text-slate-400 light:text-[#787e82]">{t.time}</span>
                 </div>
-                <div className="text-[11px] text-cyan-300 font-medium">{t.company}</div>
-                <div className="text-xs font-semibold text-slate-200 truncate">{t.subject}</div>
-                <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{t.snippet}</p>
+                <div className="text-[11px] text-[#38b6ff] light:text-[#0284c7] font-medium">{t.company}</div>
+                <div className="text-xs font-semibold text-white light:text-[#121212] truncate">{t.subject}</div>
+                <p className="text-[11px] text-slate-400 light:text-[#787e82] line-clamp-2 leading-relaxed">{t.snippet}</p>
 
                 <div className="pt-1 flex items-center gap-2">
                   {t.sentiment === "MEETING_REQUESTED" && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 light:text-emerald-700 border border-emerald-500/20">
                       ⚡ Meeting Requested
                     </span>
                   )}
                   {t.sentiment === "TECHNICAL_INQUIRY" && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#38b6ff]/10 text-[#38b6ff] light:text-[#0284c7] border border-[#38b6ff]/20">
                       🔍 Technical Spec
                     </span>
                   )}
                   {t.sentiment === "OBJECTION" && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 light:text-amber-700 border border-amber-500/20">
                       ⏱ Contract Timing
                     </span>
                   )}
@@ -210,12 +210,12 @@ export default function InboxPage() {
         </div>
 
         {/* Right Column: Active Thread View */}
-        <div className="md:col-span-7 flex flex-col min-h-0 bg-slate-900/40">
+        <div className="md:col-span-7 flex flex-col min-h-0 bg-[#1e2224] light:bg-[#ffffff]">
           {/* Thread Header */}
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+          <div className="p-4 border-b border-white/10 light:border-black/10 flex items-center justify-between bg-[#1e2224] light:bg-white">
             <div>
-              <h3 className="text-sm font-bold text-white">{selectedThread.subject}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <h3 className="text-sm font-bold text-white light:text-[#121212]">{selectedThread.subject}</h3>
+              <p className="text-xs text-slate-400 light:text-[#787e82] mt-0.5">
                 {selectedThread.sender} ({selectedThread.title} at {selectedThread.company})
               </p>
             </div>
@@ -232,31 +232,31 @@ export default function InboxPage() {
                 <div
                   className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed ${
                     h.sender === "rep"
-                      ? "bg-cyan-500 text-slate-950 font-medium rounded-tr-none"
-                      : "bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none shadow-sm"
+                      ? "bg-[#38b6ff] text-[#121212] light:bg-[#0284c7] light:text-white font-medium rounded-tr-none shadow-sm"
+                      : "bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 text-white light:text-[#121212] rounded-tl-none shadow-sm"
                   }`}
                 >
                   <p className="whitespace-pre-line">{h.text}</p>
                 </div>
-                <span className="text-[10px] text-slate-500 mt-1 px-1">{h.time}</span>
+                <span className="text-[10px] text-slate-400 light:text-[#787e82] mt-1 px-1">{h.time}</span>
               </div>
             ))}
           </div>
 
           {/* AI Drafting toolbar & reply box */}
-          <div className="p-4 border-t border-slate-800 bg-slate-950 space-y-3">
+          <div className="p-4 border-t border-white/10 light:border-black/10 bg-[#181b1c] light:bg-white space-y-3">
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAiReply}
                 loading={isDrafting}
-                className="text-xs border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 gap-1.5"
+                className="text-xs border-[#38b6ff]/30 text-[#38b6ff] light:text-[#0284c7] hover:bg-[#38b6ff]/10 gap-1.5"
               >
-                <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                <Sparkles className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
                 Draft Contextual AI Reply
               </Button>
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-slate-400 light:text-[#787e82]">
                 Cadence auto-paused for {selectedThread.sender}
               </span>
             </div>
@@ -266,16 +266,16 @@ export default function InboxPage() {
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write a response or click 'Draft Contextual AI Reply'..."
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+              className="w-full rounded-2xl border border-white/10 light:border-black/15 bg-[#252a2b] light:bg-[#f0f2f3] p-3 text-xs text-white light:text-[#121212] placeholder-slate-400 light:placeholder-[#8a9296] focus:border-[#38b6ff] light:focus:border-[#0284c7] focus:outline-none"
             />
 
             <div className="flex justify-end">
               <Button
-                variant="gradient"
+                variant="pill"
                 size="sm"
                 onClick={handleSendReply}
                 disabled={!replyText.trim()}
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs shadow-md"
               >
                 Send Reply <Send className="h-3.5 w-3.5" />
               </Button>

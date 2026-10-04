@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { setSessionCookie } from "@/lib/auth/session";
+import { attachSessionCookie, setSessionCookie } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    // In production, demo mode is disabled unless explicitly enabled via DEMO_MODE=true
-    if (process.env.NODE_ENV === "production" && process.env.DEMO_MODE !== "true") {
+    // In production, demo mode is enabled if DEMO_MODE=true or if not in strict prod
+    const isDemoAllowed = process.env.DEMO_MODE === "true" || process.env.NODE_ENV !== "production";
+    if (!isDemoAllowed) {
       return NextResponse.json(
-        { error: "Demo persona login is disabled in production. Please use your credentials." },
+        { error: "Demo persona login is disabled. Please use your credentials." },
         { status: 403 }
       );
     }
@@ -44,15 +45,19 @@ export async function POST(request: Request) {
 
     const membership = user.memberships[0];
 
-    await setSessionCookie({
+    const sessionPayload = {
       userId: user.id,
       email: user.email,
       name: user.name,
       workspaceId: membership.workspaceId,
       role: membership.role,
-    });
+    };
 
-    return NextResponse.json({
+    // Set cookie in AsyncLocalStorage store
+    await setSessionCookie(sessionPayload, request);
+
+    // Also attach cookie header explicitly to outgoing response
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -63,6 +68,10 @@ export async function POST(request: Request) {
         role: membership.role,
       },
     });
+
+    attachSessionCookie(response, sessionPayload, request);
+
+    return response;
   } catch (error: any) {
     console.error("Demo login error:", error);
     return NextResponse.json({ error: "Demo login failed" }, { status: 500 });

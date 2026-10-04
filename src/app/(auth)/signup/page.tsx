@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Activity, ArrowRight, Building, User, Sparkles } from "lucide-react";
+import { Activity, ArrowRight, Building, User, ShieldCheck, Sun, Moon } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 export default function SignupPage() {
-  const router = useRouter();
-  const [accountType, setAccountType] = useState<"individual" | "company">("company");
+  const { theme, toggleTheme } = useTheme();
+  const [accountType, setAccountType] = useState<"company" | "individual">("company");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,75 +47,113 @@ export default function SignupPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Signup failed");
+        setError(data.error || "Signup failed. Please try a different email.");
       } else {
-        router.push("/app/onboarding");
+        // Complete page reload guarantees cookie is committed before entering app
+        window.location.href = "/app/onboarding";
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("An unexpected network error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-cyan-600/10 blur-[120px]" />
+    <div className="min-h-screen bg-[#121212] light:bg-[#f7f7f7] text-white light:text-[#121212] flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-[#38b6ff]/10 light:bg-[#0284c7]/10 blur-[130px]" />
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-lg text-center">
-        <Link href="/" className="inline-flex items-center gap-2 mb-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 p-0.5">
-            <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-slate-950">
-              <Activity className="h-5 w-5 text-cyan-400" />
-            </div>
+      {/* Top Bar with Brand & Theme Switcher */}
+      <header className="mx-auto w-full max-w-5xl flex items-center justify-between z-10">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1e2224] light:bg-[#ffffff] border border-white/15 light:border-black/10 shadow-xs transition-transform group-hover:scale-105">
+            <Activity className="h-5 w-5 text-[#38b6ff] light:text-[#0284c7]" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white">SignalFlow</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight text-white light:text-[#121212]">
+              SignalFlow
+            </span>
+            <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/10 light:bg-black/5 text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10">
+              Intelligence
+            </span>
+          </div>
         </Link>
-        <h2 className="text-2xl font-extrabold text-white">Create your revenue workspace</h2>
-        <p className="mt-1 text-xs text-slate-400">
-          Already registered?{" "}
-          <Link href="/login" className="text-cyan-400 hover:underline font-medium">
-            Sign in
-          </Link>
-        </p>
-      </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-lg">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+        {/* Architectural Sliding Pill Theme Switcher */}
+        <button
+          onClick={toggleTheme}
+          className="relative flex items-center justify-between w-[68px] h-8 px-1.5 rounded-full bg-[#1e2224] light:bg-[#eaeaea] border border-white/15 light:border-black/15 transition-all shadow-inner cursor-pointer"
+          title="Toggle Light / Dark mode"
+          aria-label="Toggle Theme"
+        >
+          <span
+            className={`absolute top-1 bottom-1 w-6 rounded-full transition-all duration-300 ease-in-out ${
+              theme === "dark"
+                ? "left-1 bg-[#121212] border border-white/25 shadow-xs"
+                : "left-[37px] bg-[#ffffff] border border-black/15 shadow-xs"
+            }`}
+          />
+          <Moon
+            className={`relative z-10 h-3.5 w-3.5 transition-colors ${
+              theme === "dark" ? "text-[#34feff]" : "text-gray-400"
+            }`}
+          />
+          <Sun
+            className={`relative z-10 h-3.5 w-3.5 transition-colors ${
+              theme === "dark" ? "text-gray-500" : "text-[#f2be01]"
+            }`}
+          />
+        </button>
+      </header>
+
+      {/* Main Form Body */}
+      <main className="my-auto sm:mx-auto sm:w-full sm:max-w-lg z-10 py-6">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white light:text-[#121212]">
+            Create your revenue workspace
+          </h1>
+          <p className="mt-2 text-xs text-slate-300 light:text-[#4a5053]">
+            Start orchestrating autonomous intent telemetry with instant AI scoring.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-7 sm:p-8 shadow-2xl backdrop-blur-xl transition-colors">
           {/* Account Type Selector */}
-          <div className="mb-6 grid grid-cols-2 gap-3 p-1 rounded-xl bg-slate-950 border border-slate-800">
+          <div className="mb-6 grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
             <button
               type="button"
               onClick={() => setAccountType("company")}
-              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 accountType === "company"
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#181b1c] text-white light:bg-white light:text-[#121212] shadow-sm border border-white/10 light:border-black/10"
+                  : "text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212]"
               }`}
             >
-              <Building className="h-4 w-4" /> Company / Workspace
+              <Building className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7]" /> Company / Team
             </button>
             <button
               type="button"
               onClick={() => setAccountType("individual")}
-              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 accountType === "individual"
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#181b1c] text-white light:bg-white light:text-[#121212] shadow-sm border border-white/10 light:border-black/10"
+                  : "text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212]"
               }`}
             >
-              <User className="h-4 w-4" /> Individual User
+              <User className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7]" /> Individual User
             </button>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-400">
-              {error}
+            <div className="mb-5 rounded-2xl bg-red-500/10 border border-red-500/30 p-3.5 text-xs text-red-400 light:text-red-600 flex items-start gap-2.5">
+              <span className="font-bold">Error:</span>
+              <span className="flex-1">{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <Input
                 label="Full Name"
                 placeholder="Sarah Chen"
@@ -144,7 +182,7 @@ export default function SignupPage() {
 
             {accountType === "company" ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <Input
                     label="Company Name"
                     placeholder="Acme Technologies"
@@ -160,7 +198,7 @@ export default function SignupPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <Select
                     label="Industry"
                     value={industry}
@@ -214,12 +252,38 @@ export default function SignupPage() {
               />
             )}
 
-            <Button type="submit" variant="gradient" className="w-full justify-center mt-2" loading={loading}>
+            <Button
+              type="submit"
+              variant="pill"
+              size="md"
+              className="w-full justify-center shadow-lg mt-3"
+              loading={loading}
+            >
               Create Workspace & Continue <ArrowRight className="h-4 w-4 ml-1.5" />
             </Button>
           </form>
+
+          <div className="mt-6 pt-5 border-t border-white/10 light:border-black/10 text-center">
+            <p className="text-xs text-slate-400 light:text-[#787e82]">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-[#38b6ff] light:text-[#0284c7] hover:underline font-semibold"
+              >
+                Sign in →
+              </Link>
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer Note */}
+      <footer className="mx-auto w-full max-w-5xl text-center z-10 py-4">
+        <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-400 light:text-[#787e82]">
+          <ShieldCheck className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
+          <span>Multi-tenant cryptographic workspace isolation active.</span>
+        </div>
+      </footer>
     </div>
   );
 }

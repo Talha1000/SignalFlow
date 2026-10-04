@@ -75,26 +75,26 @@ export function NotificationDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col text-slate-100 animate-slideInRight">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-[#181b1c] light:bg-[#ffffff] text-white light:text-[#121212] border-l border-white/10 light:border-black/10 shadow-2xl flex flex-col animate-slideInRight">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+      <div className="p-4 border-b border-white/10 light:border-black/10 flex items-center justify-between bg-[#1e2224] light:bg-white">
         <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-cyan-400" />
-          <h3 className="text-sm font-bold text-white">Notifications</h3>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <Bell className="h-5 w-5 text-[#38b6ff] light:text-[#0284c7]" />
+          <h3 className="text-sm font-bold text-white light:text-[#121212]">Notifications</h3>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#38b6ff]/10 light:bg-[#0284c7]/10 text-[#38b6ff] light:text-[#0284c7] border border-[#38b6ff]/20">
             {items.filter((i) => !i.read).length} new
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={markAllRead}
-            className="text-[11px] text-slate-400 hover:text-cyan-400 transition-colors px-2 py-1 rounded"
+            className="text-[11px] text-slate-400 light:text-[#787e82] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors px-2 py-1 rounded"
           >
             Mark all read
           </button>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            className="p-1 rounded-lg text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212] hover:bg-[#252a2b] light:hover:bg-[#f0f2f3]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -102,23 +102,23 @@ export function NotificationDrawer({
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80">
+      <div className="flex-1 overflow-y-auto divide-y divide-white/10 light:divide-black/10">
         {items.map((item) => (
           <div
             key={item.id}
             onClick={() => markItemRead(item.id)}
-            className={`p-4 transition-colors hover:bg-slate-900/80 ${
-              !item.read ? "bg-cyan-950/20" : "bg-slate-950"
+            className={`p-4 transition-colors hover:bg-[#252a2b]/60 light:hover:bg-[#f0f2f3] cursor-pointer ${
+              !item.read ? "bg-[#38b6ff]/5 light:bg-[#0284c7]/5" : "bg-transparent"
             }`}
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="text-xs font-semibold text-white">{item.title}</span>
+              <span className="text-xs font-semibold text-white light:text-[#121212]">{item.title}</span>
               {!item.read && (
-                <span className="h-2 w-2 rounded-full bg-cyan-400 shrink-0 mt-1" />
+                <span className="h-2 w-2 rounded-full bg-[#38b6ff] light:bg-[#0284c7] shrink-0 mt-1" />
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.message}</p>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+            <p className="text-xs text-slate-400 light:text-[#787e82] mt-1 leading-relaxed">{item.message}</p>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 light:text-[#787e82]">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" /> {item.time}
               </span>
@@ -126,7 +126,7 @@ export function NotificationDrawer({
                 <Link
                   href={item.link}
                   onClick={onClose}
-                  className="text-cyan-400 hover:underline font-medium"
+                  className="text-[#38b6ff] light:text-[#0284c7] hover:underline font-medium"
                 >
                   View lead →
                 </Link>

@@ -87,11 +87,11 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Target className="h-6 w-6 text-cyan-400" />
+          <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+            <Target className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
             Lead Prioritization & CRM
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 light:text-[#787e82] mt-0.5">
             All workspace leads continuously scored by behavioral intent and customer fit.
           </p>
         </div>
@@ -101,7 +101,7 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
             <Download className="h-3.5 w-3.5" /> Export CSV
           </Button>
           <Link href="/app/onboarding">
-            <Button variant="gradient" size="sm" className="text-xs gap-1.5">
+            <Button variant="pill" size="sm" className="text-xs gap-1.5 shadow-md">
               <Plus className="h-3.5 w-3.5" /> Import Leads
             </Button>
           </Link>
@@ -109,22 +109,22 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3.5 flex flex-wrap items-center gap-3">
+      <div className="rounded-2xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-3.5 flex flex-wrap items-center gap-3 shadow-sm">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 light:text-[#787e82]" />
           <input
             type="text"
             placeholder="Search by name, company, or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+            className="w-full rounded-xl border border-white/10 light:border-black/15 bg-[#252a2b] light:bg-[#f0f2f3] pl-9 pr-3 py-2 text-xs text-white light:text-[#121212] placeholder-slate-400 light:placeholder-[#8a9296] focus:border-[#38b6ff] light:focus:border-[#0284c7] focus:outline-none"
           />
         </div>
 
         <select
           value={intentFilter}
           onChange={(e) => setIntentFilter(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+          className="rounded-xl border border-white/10 light:border-black/15 bg-[#252a2b] light:bg-[#f0f2f3] px-3 py-2 text-xs text-white light:text-[#121212] focus:outline-none focus:border-[#38b6ff] light:focus:border-[#0284c7]"
         >
           <option value="ALL">All Intent Levels</option>
           <option value="HOT">🔥 Hot Intent (85+)</option>
@@ -137,7 +137,7 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+          className="rounded-xl border border-white/10 light:border-black/15 bg-[#252a2b] light:bg-[#f0f2f3] px-3 py-2 text-xs text-white light:text-[#121212] focus:outline-none focus:border-[#38b6ff] light:focus:border-[#0284c7]"
         >
           <option value="ALL">All Stages</option>
           <option value="NEW">New</option>
@@ -153,7 +153,7 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
         <select
           value={sortField}
           onChange={(e: any) => setSortField(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+          className="rounded-xl border border-white/10 light:border-black/15 bg-[#252a2b] light:bg-[#f0f2f3] px-3 py-2 text-xs text-white light:text-[#121212] focus:outline-none focus:border-[#38b6ff] light:focus:border-[#0284c7]"
         >
           <option value="score">Sort by Score (Highest)</option>
           <option value="value">Sort by Deal Value</option>
@@ -162,10 +162,10 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
       </div>
 
       {/* Leads Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm">
+      <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900 border-b border-slate-800 text-[11px] uppercase font-mono text-slate-400">
+          <table className="w-full text-left text-xs text-slate-300 light:text-[#4a5053]">
+            <thead className="bg-[#181b1c] light:bg-white border-b border-white/10 light:border-black/10 text-[11px] uppercase font-mono text-slate-400 light:text-[#787e82]">
               <tr>
                 <th className="p-3.5">Score</th>
                 <th className="p-3.5">Contact</th>
@@ -177,10 +177,10 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-white/10 light:divide-black/10">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-500">
+                  <td colSpan={8} className="p-8 text-center text-slate-400 light:text-[#787e82]">
                     No leads match the selected search criteria.
                   </td>
                 </tr>
@@ -194,7 +194,7 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                   return (
                     <tr
                       key={lead.id}
-                      className="hover:bg-slate-800/50 transition-colors group"
+                      className="hover:bg-[#252a2b]/60 light:hover:bg-[#f0f2f3] transition-colors group"
                     >
                       <td className="p-3.5">
                         <ScoreBadge score={lead.score} />
@@ -202,17 +202,17 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                       <td className="p-3.5">
                         <Link
                           href={`/app/leads/${lead.id}`}
-                          className="font-semibold text-white group-hover:text-cyan-400 transition-colors"
+                          className="font-semibold text-white light:text-[#121212] group-hover:text-[#38b6ff] light:group-hover:text-[#0284c7] transition-colors"
                         >
                           {contactName}
                         </Link>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-[11px] text-slate-400 light:text-[#787e82]">
                           {lead.contact?.title || "Decision Maker"}
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <div className="font-medium text-slate-200">{companyName}</div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="font-medium text-white light:text-[#121212]">{companyName}</div>
+                        <div className="text-[10px] text-slate-400 light:text-[#787e82]">
                           {lead.company?.industry || "B2B Tech"}
                         </div>
                       </td>
@@ -222,16 +222,16 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                       <td className="p-3.5">
                         <StageBadge stage={lead.stage} />
                       </td>
-                      <td className="p-3.5 font-mono text-slate-200">
+                      <td className="p-3.5 font-mono text-white light:text-[#121212]">
                         {lead.dealValue > 0 ? (
-                          <span className="text-emerald-400 font-semibold">
+                          <span className="text-emerald-400 light:text-emerald-700 font-semibold">
                             ${lead.dealValue.toLocaleString()}
                           </span>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-slate-400 light:text-[#787e82]">—</span>
                         )}
                       </td>
-                      <td className="p-3.5 text-slate-400">
+                      <td className="p-3.5 text-slate-400 light:text-[#787e82]">
                         {lead.owner?.name || "Unassigned"}
                       </td>
                       <td className="p-3.5 text-right space-x-2">
@@ -246,14 +246,14 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                               score: lead.score,
                             })
                           }
-                          className="p-1 rounded bg-slate-800 hover:bg-cyan-500/20 text-slate-400 hover:text-cyan-300 transition-colors"
+                          className="p-1.5 rounded-lg bg-[#252a2b] light:bg-[#f0f2f3] hover:bg-[#38b6ff]/20 light:hover:bg-[#0284c7]/20 text-slate-400 light:text-[#787e82] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"
                           title="Compose email"
                         >
                           <Mail className="h-3.5 w-3.5" />
                         </button>
                         <Link
                           href={`/app/leads/${lead.id}`}
-                          className="p-1 inline-block rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                          className="p-1.5 inline-block rounded-lg bg-[#252a2b] light:bg-[#f0f2f3] hover:bg-white/10 light:hover:bg-black/5 text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212] transition-colors"
                           title="View lead profile"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />

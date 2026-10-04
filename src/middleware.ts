@@ -13,7 +13,13 @@ async function verifyJwtInMiddleware(token: string): Promise<boolean> {
     // Decode and check payload expiration
     const base64UrlPayload = parts[1];
     const base64Payload = base64UrlPayload.replace(/-/g, "+").replace(/_/g, "/");
-    const payloadJson = JSON.parse(atob(base64Payload));
+    const padPayloadLength = (4 - (base64Payload.length % 4)) % 4;
+    const paddedPayload = base64Payload + "=".repeat(padPayloadLength);
+    const jsonStr =
+      typeof Buffer !== "undefined"
+        ? Buffer.from(paddedPayload, "base64").toString("utf-8")
+        : decodeURIComponent(escape(atob(paddedPayload)));
+    const payloadJson = JSON.parse(jsonStr);
     if (payloadJson.exp && payloadJson.exp * 1000 < Date.now()) {
       return false;
     }
@@ -32,11 +38,17 @@ async function verifyJwtInMiddleware(token: string): Promise<boolean> {
     const signatureStr = parts[2].replace(/-/g, "+").replace(/_/g, "/");
     const padLength = (4 - (signatureStr.length % 4)) % 4;
     const paddedSig = signatureStr + "=".repeat(padLength);
-    const binarySig = atob(paddedSig);
-    const sigBytes = new Uint8Array(binarySig.length);
-    for (let i = 0; i < binarySig.length; i++) {
-      sigBytes[i] = binarySig.charCodeAt(i);
-    }
+    const sigBytes =
+      typeof Buffer !== "undefined"
+        ? new Uint8Array(Buffer.from(paddedSig, "base64"))
+        : (() => {
+            const binarySig = atob(paddedSig);
+            const bytes = new Uint8Array(binarySig.length);
+            for (let i = 0; i < binarySig.length; i++) {
+              bytes[i] = binarySig.charCodeAt(i);
+            }
+            return bytes;
+          })();
 
     return await crypto.subtle.verify("HMAC", key, sigBytes, data);
   } catch {

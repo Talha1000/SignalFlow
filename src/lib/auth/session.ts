@@ -51,21 +51,51 @@ export async function requireSession(): Promise<SessionPayload> {
   return session;
 }
 
-export async function setSessionCookie(payload: SessionPayload): Promise<void> {
-  const token = signSessionToken(payload);
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
+export function getCookieOptions(req?: Request) {
+  const host = req?.headers.get("host") || "";
+  const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+  const isHttps = req?.headers.get("x-forwarded-proto") === "https" || (req?.url?.startsWith("https://") ?? false);
+  // Browsers strictly reject Secure cookies on insecure HTTP localhost.
+  const secure = !isLocal && (isHttps || (process.env.NODE_ENV === "production" && process.env.COOKIE_INSECURE !== "true"));
+
+  return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure,
+    sameSite: "lax" as const,
     path: "/",
     maxAge: 7 * 24 * 60 * 60, // 7 days
-  });
+  };
 }
 
-export async function clearSessionCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+export function attachSessionCookie(response: any, payload: SessionPayload, req?: Request): string {
+  const token = signSessionToken(payload);
+  const opts = getCookieOptions(req);
+  response.cookies.set(COOKIE_NAME, token, opts);
+  return token;
+}
+
+export async function setSessionCookie(payload: SessionPayload, req?: Request): Promise<string> {
+  const token = signSessionToken(payload);
+  const opts = getCookieOptions(req);
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(COOKIE_NAME, token, opts);
+  } catch {
+    // If called outside AsyncLocalStorage context
+  }
+  return token;
+}
+
+export async function clearSessionCookie(response?: any): Promise<void> {
+  if (response?.cookies) {
+    response.cookies.delete(COOKIE_NAME);
+  }
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(COOKIE_NAME);
+  } catch {
+    // ignore
+  }
 }
 
 export async function getCurrentUserAndWorkspace() {

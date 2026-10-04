@@ -95,19 +95,19 @@ export function CommandPalette({
       />
 
       {/* Palette box */}
-      <div className="relative w-full max-w-xl rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl z-10 overflow-hidden text-slate-100 flex flex-col">
+      <div className="relative w-full max-w-xl rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-2xl z-10 overflow-hidden text-white light:text-[#121212] flex flex-col">
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-slate-800 gap-3">
-          <Search className="h-5 w-5 text-cyan-400 shrink-0" />
+        <div className="flex items-center px-4 py-3.5 border-b border-white/10 light:border-black/10 gap-3">
+          <Search className="h-5 w-5 text-[#38b6ff] light:text-[#0284c7] shrink-0" />
           <input
             autoFocus
             type="text"
             placeholder="Type a command, prospect, company, or search ('hot leads')..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
+            className="w-full bg-transparent text-sm text-white light:text-[#121212] placeholder-slate-400 light:placeholder-[#8a9296] focus:outline-none"
           />
-          <kbd className="hidden sm:inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-700">
+          <kbd className="hidden sm:inline-flex items-center gap-1 rounded bg-[#252a2b] light:bg-[#f0f2f3] px-2 py-0.5 text-[10px] font-mono text-slate-400 light:text-[#787e82] border border-white/10 light:border-black/10">
             ESC
           </kbd>
         </div>
@@ -115,7 +115,7 @@ export function CommandPalette({
         {/* Results list */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-500">
+            <div className="py-8 text-center text-xs text-slate-400 light:text-[#787e82]">
               No matching leads, companies, or commands found for "{query}".
             </div>
           ) : (
@@ -123,44 +123,44 @@ export function CommandPalette({
               <button
                 key={item.id}
                 onClick={() => handleSelect(item.href)}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-800/80 transition-colors text-left group"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#252a2b] light:hover:bg-[#f0f2f3] transition-colors text-left group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-1.5 rounded-lg bg-slate-800 text-slate-400 group-hover:text-cyan-400 group-hover:bg-cyan-500/10">
+                  <div className="p-1.5 rounded-lg bg-[#252a2b] light:bg-[#f0f2f3] text-slate-400 light:text-[#787e82] group-hover:text-[#38b6ff] light:group-hover:text-[#0284c7] group-hover:bg-[#38b6ff]/10">
                     {item.category === "leads" && <Target className="h-4 w-4" />}
                     {item.category === "companies" && <Building className="h-4 w-4" />}
                     {item.category === "pages" && <Layers className="h-4 w-4" />}
                     {item.category === "actions" && <Flame className="h-4 w-4 text-amber-400" />}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-white flex items-center gap-2">
+                    <div className="text-xs font-semibold text-white light:text-[#121212] flex items-center gap-2">
                       {item.title}
                       {item.score && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-red-500/10 text-red-400 light:text-red-700 border border-red-500/20">
                           {item.score}
                         </span>
                       )}
                     </div>
                     {item.subtitle && (
-                      <div className="text-[11px] text-slate-400">{item.subtitle}</div>
+                      <div className="text-[11px] text-slate-400 light:text-[#787e82]">{item.subtitle}</div>
                     )}
                   </div>
                 </div>
-                <ArrowRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-slate-300" />
+                <ArrowRight className="h-3.5 w-3.5 text-slate-400 light:text-[#787e82] group-hover:text-white light:group-hover:text-[#121212]" />
               </button>
             ))
           )}
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-500">
+        <div className="px-4 py-2 border-t border-white/10 light:border-black/10 bg-[#181b1c] light:bg-[#fafafa] flex items-center justify-between text-[11px] text-slate-400 light:text-[#787e82]">
           <div className="flex items-center gap-2">
             <span>Navigation:</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">↑↓</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-[#252a2b] light:bg-[#f0f2f3] text-slate-300 light:text-[#121212] text-[10px]">↑↓</kbd>
             <span>Select:</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">↵</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-[#252a2b] light:bg-[#f0f2f3] text-slate-300 light:text-[#121212] text-[10px]">↵</kbd>
           </div>
-          <span className="text-cyan-400 font-mono">SignalFlow Quick-Command</span>
+          <span className="text-[#38b6ff] light:text-[#0284c7] font-mono">SignalFlow Quick-Command</span>
         </div>
       </div>
     </div>

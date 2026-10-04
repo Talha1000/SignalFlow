@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { setSessionCookie } from "@/lib/auth/session";
+import { attachSessionCookie, setSessionCookie } from "@/lib/auth/session";
 import { Plan, Role } from "@prisma/client";
 
 export async function POST(request: Request) {
@@ -92,18 +92,24 @@ export async function POST(request: Request) {
       },
     });
 
-    await setSessionCookie({
+    const sessionPayload = {
       userId: user.id,
       email: user.email,
       name: user.name,
       workspaceId: workspace.id,
       role: Role.OWNER,
-    });
+    };
 
-    return NextResponse.json({
+    await setSessionCookie(sessionPayload, request);
+
+    const response = NextResponse.json({
       success: true,
       workspaceId: workspace.id,
     });
+
+    attachSessionCookie(response, sessionPayload, request);
+
+    return response;
   } catch (error: any) {
     console.error("Signup error:", error);
     return NextResponse.json({ error: "Account creation failed" }, { status: 500 });
