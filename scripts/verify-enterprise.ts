@@ -473,13 +473,67 @@ async function runTestSuite() {
 
     // 20. Distributed Rate Limiter Adapter
     console.log("\n--- 20. DISTRIBUTED RATE LIMITER ADAPTER ---");
-    const { createDistributedRateLimitAdapter } = await import("../src/lib/security/rateLimit");
+    const { createDistributedRateLimitAdapter, getRateLimitHeaders, checkRateLimitAsync } = await import("../src/lib/security/rateLimit");
     const distAdapter = createDistributedRateLimitAdapter();
     const distTestKey = `test_dist_rl_${Date.now()}`;
     const distFirst = await distAdapter.check(distTestKey, { limit: 1, windowMs: 10000 });
     assert(distFirst.success, "Distributed adapter permits first valid request");
     const distSecond = await distAdapter.check(distTestKey, { limit: 1, windowMs: 10000 });
     assert(!distSecond.success, "Distributed adapter blocks second excess request");
+
+    const rlHeaders = getRateLimitHeaders(distSecond);
+    assert(rlHeaders["X-RateLimit-Limit"] === "1", "Rate limit headers include X-RateLimit-Limit");
+    assert(rlHeaders["X-RateLimit-Remaining"] === "0", "Rate limit headers include X-RateLimit-Remaining");
+    assert(Boolean(rlHeaders["X-RateLimit-Reset"]), "Rate limit headers include X-RateLimit-Reset");
+    assert(Boolean(rlHeaders["Retry-After"]), "Rate limit headers include Retry-After on 429 block");
+
+    // 21. Fail-Closed Comprehensive IPv4 + IPv6 SSRF Validation
+    console.log("\n--- 21. FAIL-CLOSED COMPREHENSIVE IPv4 & IPv6 SSRF DEFENSE ---");
+    const { isSafePublicWebhookUrl: ssrfSyncCheck, isSafePublicWebhookUrlAsync: ssrfAsyncCheck, isPrivateIp } = await import("../src/lib/security/ssrf");
+
+    // Comprehensive IPv4 range checks
+    assert(!ssrfSyncCheck("https://127.0.0.1/webhook"), "SSRF blocks IPv4 loopback (127.0.0.1)");
+    assert(!ssrfSyncCheck("https://10.0.1.5/webhook"), "SSRF blocks RFC1918 10.x.x.x");
+    assert(!ssrfSyncCheck("https://172.16.5.1/webhook"), "SSRF blocks RFC1918 172.16.x.x");
+    assert(!ssrfSyncCheck("https://192.168.1.1/webhook"), "SSRF blocks RFC1918 192.168.x.x");
+    assert(!ssrfSyncCheck("https://169.254.169.254/latest/meta-data"), "SSRF blocks AWS/GCP cloud metadata");
+    assert(!ssrfSyncCheck("https://100.64.0.1/webhook"), "SSRF blocks RFC6598 Shared Address Space / CGNAT");
+    assert(!ssrfSyncCheck("https://224.0.0.1/webhook"), "SSRF blocks multicast address space");
+
+    // Port & Credential defense
+    assert(!ssrfSyncCheck("https://example.com:8080/webhook"), "SSRF blocks non-443 port (8080)");
+    assert(!ssrfSyncCheck("https://example.com:22/webhook"), "SSRF blocks SSH port (22)");
+    assert(!ssrfSyncCheck("https://admin:secret@example.com/webhook"), "SSRF blocks embedded credentials in URL");
+
+    // Comprehensive IPv6 defense
+    assert(!ssrfSyncCheck("https://[::1]/webhook"), "SSRF blocks IPv6 loopback [::1]");
+    assert(!ssrfSyncCheck("https://[fe80::1]/webhook"), "SSRF blocks IPv6 link-local [fe80::1]");
+    assert(!ssrfSyncCheck("https://[fc00::1]/webhook"), "SSRF blocks IPv6 ULA [fc00::1]");
+    assert(!ssrfSyncCheck("https://[fd12:3456:789a::1]/webhook"), "SSRF blocks IPv6 ULA [fd..]");
+    assert(!ssrfSyncCheck("https://[::ffff:127.0.0.1]/webhook"), "SSRF blocks IPv4-mapped IPv6 loopback");
+    assert(!ssrfSyncCheck("https://[::ffff:169.254.169.254]/webhook"), "SSRF blocks IPv4-mapped IPv6 metadata");
+
+    // Fail-Closed DNS validation
+    const unresolvableCheck = await ssrfAsyncCheck("https://invalid-unresolvable-host-fail-closed-test.invalid/hook");
+    assert(!unresolvableCheck, "Async SSRF fails closed on unresolvable DNS host");
+    assert(ssrfSyncCheck("https://hooks.slack.com/services/T00/B00/X00"), "SSRF allows valid public HTTPS endpoint");
+
+    // 22. Production Seed Guard
+    console.log("\n--- 22. PRODUCTION SEED GUARD ---");
+    const fs = await import("fs");
+    const seedContent = fs.readFileSync("prisma/seed.ts", "utf-8");
+    assert(seedContent.includes("ALLOW_PRODUCTION_SEED"), "Seed script includes ALLOW_PRODUCTION_SEED safeguard");
+    assert(seedContent.includes("isProd"), "Seed script evaluates production environment flags");
+    assert(seedContent.includes("if (!isProd)"), "Seed script guards destructive table truncation against production execution");
+
+    // 23. True Concurrency-Safe Quota Locking
+    console.log("\n--- 23. CONCURRENCY-SAFE QUOTA ROW LOCKING ---");
+    const usageFile = fs.readFileSync("src/lib/billing/usage.ts", "utf-8");
+    assert(usageFile.includes('SELECT id FROM "Workspace" WHERE id =') && usageFile.includes("FOR UPDATE"), "Usage quota enforcement applies PostgreSQL row lock (FOR UPDATE)");
+    const leadsRouteFile = fs.readFileSync("src/app/api/v1/leads/route.ts", "utf-8");
+    assert(leadsRouteFile.includes("FOR UPDATE"), "Lead creation applies row lock on Workspace record during quota consumption");
+    const signalsRouteFile = fs.readFileSync("src/app/api/v1/signals/route.ts", "utf-8");
+    assert(signalsRouteFile.includes('SELECT id FROM "Company" WHERE id =') && signalsRouteFile.includes("FOR UPDATE"), "Signal scoring applies row lock on Company to serialize concurrent scoring calculations");
 
     console.log("\n=================================================");
     console.log(`SUMMARY: ${passes} PASSED, ${fails} FAILED`);

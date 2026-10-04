@@ -24,114 +24,17 @@ export interface AutomationExecutionOutcome {
   }>;
 }
 
-/**
- * Strict SSRF protection: validates that webhook destination is an external, public HTTPS endpoint.
- * Disallows localhost, loopback, private RFC1918 IPv4 ranges, link-local, and cloud metadata endpoints.
- */
-export function isSafePublicWebhookUrl(urlString: string): boolean {
-  try {
-    const url = new URL(urlString);
-    if (url.protocol !== "https:") return false;
+import {
+  isSafePublicWebhookUrl,
+  isSafePublicWebhookUrlAsync,
+  isPrivateIp,
+} from "@/lib/security/ssrf";
 
-    const hostname = url.hostname.toLowerCase();
-
-    // Reject internal hostnames and suffixes
-    if (
-      hostname === "localhost" ||
-      hostname.endsWith(".localhost") ||
-      hostname.endsWith(".local") ||
-      hostname.endsWith(".internal") ||
-      hostname.endsWith(".corp")
-    ) {
-      return false;
-    }
-
-    // Reject IPv6 loopback and link-local addresses
-    if (
-      hostname === "[::1]" ||
-      hostname === "::1" ||
-      hostname.startsWith("fe80:") ||
-      hostname.startsWith("[fe80:")
-    ) {
-      return false;
-    }
-
-    // Explicit IPv4 checks against RFC 1918 / loopback / link-local / zero-net
-    const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    const ipMatch = hostname.match(ipv4Regex);
-    if (ipMatch) {
-      const o1 = parseInt(ipMatch[1], 10);
-      const o2 = parseInt(ipMatch[2], 10);
-      const o3 = parseInt(ipMatch[3], 10);
-      const o4 = parseInt(ipMatch[4], 10);
-      if (o1 > 255 || o2 > 255 || o3 > 255 || o4 > 255) return false;
-
-      // 0.0.0.0/8
-      if (o1 === 0) return false;
-      // 127.0.0.0/8 (Loopback)
-      if (o1 === 127) return false;
-      // 10.0.0.0/8 (Private RFC 1918)
-      if (o1 === 10) return false;
-      // 172.16.0.0/12 (Private RFC 1918: 172.16.0.0 - 172.31.255.255)
-      if (o1 === 172 && o2 >= 16 && o2 <= 31) return false;
-      // 192.168.0.0/16 (Private RFC 1918)
-      if (o1 === 192 && o2 === 168) return false;
-      // 169.254.0.0/16 (Link-local & AWS/GCP/Azure instance metadata)
-      if (o1 === 169 && o2 === 254) return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Validates whether an IP address belongs to private/internal/loopback ranges.
- */
-function isPrivateIp(ip: string): boolean {
-  if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("fe80:") || ip.startsWith("fc00:") || ip.startsWith("fd00:")) {
-    return true;
-  }
-  const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-  const match = ip.match(ipv4Regex);
-  if (!match) return false;
-  const o1 = parseInt(match[1], 10);
-  const o2 = parseInt(match[2], 10);
-  if (o1 === 0 || o1 === 127 || o1 === 10) return true;
-  if (o1 === 172 && o2 >= 16 && o2 <= 31) return true;
-  if (o1 === 192 && o2 === 168) return true;
-  if (o1 === 169 && o2 === 254) return true;
-  return false;
-}
-
-/**
- * Asynchronous deep SSRF validator: resolves DNS records to ensure no public host points to internal IP spaces.
- */
-export async function isSafePublicWebhookUrlAsync(urlString: string): Promise<boolean> {
-  if (!isSafePublicWebhookUrl(urlString)) return false;
-
-  try {
-    const url = new URL(urlString);
-    // Dynamic import dns promises to avoid bundling issues on edge runtimes
-    const dns = await import("dns/promises");
-    const addresses = await dns.resolve(url.hostname).catch(() => []);
-    if (!addresses || addresses.length === 0) {
-      // If resolution fails or returns no A records, check fallback lookup
-      const lookup = await dns.lookup(url.hostname).catch(() => null);
-      if (!lookup || !lookup.address) return false;
-      return !isPrivateIp(lookup.address);
-    }
-
-    for (const addr of addresses) {
-      if (isPrivateIp(addr)) return false;
-    }
-    return true;
-  } catch {
-    // If DNS check fails or running in constrained environment, fall back to hostname validation result
-    return isSafePublicWebhookUrl(urlString);
-  }
-}
+export {
+  isSafePublicWebhookUrl,
+  isSafePublicWebhookUrlAsync,
+  isPrivateIp,
+};
 
 /**
  * Evaluates and executes active automations in the workspace matching the event.

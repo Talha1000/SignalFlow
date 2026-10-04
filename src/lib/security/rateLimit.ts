@@ -40,8 +40,42 @@ export interface RateLimitStoreAdapter {
 
 let customStoreAdapter: RateLimitStoreAdapter | null = null;
 
-export function setRateLimitStoreAdapter(adapter: RateLimitStoreAdapter) {
+// Auto-detect production distributed store from environment (Upstash Redis or Vercel KV)
+if (
+  typeof process !== "undefined" &&
+  process.env &&
+  ((process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) ||
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN))
+) {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (redisUrl && redisToken) {
+    customStoreAdapter = createDistributedRateLimitAdapter({ redisUrl, redisToken });
+  }
+}
+
+export function setRateLimitStoreAdapter(adapter: RateLimitStoreAdapter | null) {
   customStoreAdapter = adapter;
+}
+
+export function getRateLimitStoreAdapter(): RateLimitStoreAdapter | null {
+  return customStoreAdapter;
+}
+
+/**
+ * Standard HTTP rate limit headers conforming to RFC specifications.
+ */
+export function getRateLimitHeaders(result: RateLimitResult): Record<string, string> {
+  const resetEpochSeconds = Math.ceil((Date.now() + result.resetMs) / 1000);
+  const headers: Record<string, string> = {
+    "X-RateLimit-Limit": result.limit.toString(),
+    "X-RateLimit-Remaining": Math.max(0, result.remaining).toString(),
+    "X-RateLimit-Reset": resetEpochSeconds.toString(),
+  };
+  if (!result.success) {
+    headers["Retry-After"] = Math.max(1, Math.ceil(result.resetMs / 1000)).toString();
+  }
+  return headers;
 }
 
 /**

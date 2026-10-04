@@ -5,32 +5,58 @@ import crypto from "crypto";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting SignalFlow comprehensive database seed...");
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.APP_ENV === "production" ||
+    process.env.VERCEL_ENV === "production";
 
-  // 1. Clean existing data in reverse relation order
-  await prisma.auditLog.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.activity.deleteMany();
-  await prisma.scoreEvent.deleteMany();
-  await prisma.leadScore.deleteMany();
-  await prisma.leadTag.deleteMany();
-  await prisma.tag.deleteMany();
-  await prisma.sequenceEnrollment.deleteMany();
-  await prisma.sequenceStep.deleteMany();
-  await prisma.sequence.deleteMany();
-  await prisma.automationExecution.deleteMany();
-  await prisma.automation.deleteMany();
-  await prisma.pipelineStage.deleteMany();
-  await prisma.lead.deleteMany();
-  await prisma.contact.deleteMany();
-  await prisma.company.deleteMany();
-  await prisma.apiKey.deleteMany();
-  await prisma.webhook.deleteMany();
-  await prisma.usageRecord.deleteMany();
-  await prisma.subscription.deleteMany();
-  await prisma.workspaceMember.deleteMany();
-  await prisma.workspace.deleteMany();
-  await prisma.user.deleteMany();
+  if (isProd) {
+    if (process.env.ALLOW_PRODUCTION_SEED !== "true") {
+      console.error(
+        "🚨 FATAL: Database seed blocked in PRODUCTION environment.\n" +
+        "Seeding would destroy all customer records, tenant workspaces, and audit logs.\n" +
+        "Set ALLOW_PRODUCTION_SEED=true to override if running an intentional baseline initialization."
+      );
+      process.exit(1);
+    }
+    console.warn("⚠️ NOTICE: ALLOW_PRODUCTION_SEED=true is set. Running non-destructive production initialization.");
+  }
+
+  console.log("🌱 Starting SignalFlow database seed...");
+
+  // 1. Clean existing data in reverse relation order (ONLY in non-production environments)
+  if (!isProd) {
+    await prisma.auditLog.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.activity.deleteMany();
+    await prisma.scoreEvent.deleteMany();
+    await prisma.leadScore.deleteMany();
+    await prisma.leadTag.deleteMany();
+    await prisma.tag.deleteMany();
+    await prisma.sequenceEnrollment.deleteMany();
+    await prisma.sequenceStep.deleteMany();
+    await prisma.sequence.deleteMany();
+    await prisma.automationExecution.deleteMany();
+    await prisma.automation.deleteMany();
+    await prisma.pipelineStage.deleteMany();
+    await prisma.lead.deleteMany();
+    await prisma.contact.deleteMany();
+    await prisma.company.deleteMany();
+    await prisma.apiKey.deleteMany();
+    await prisma.webhook.deleteMany();
+    await prisma.usageRecord.deleteMany();
+    await prisma.subscription.deleteMany();
+    await prisma.workspaceMember.deleteMany();
+    await prisma.workspace.deleteMany();
+    await prisma.user.deleteMany();
+  } else {
+    // In production, ensure we don't duplicate or overwrite if already initialized
+    const existingUsers = await prisma.user.count();
+    if (existingUsers > 0) {
+      console.log("ℹ️ Production database already contains users. Skipping demo user creation to preserve production state.");
+      return;
+    }
+  }
 
   // 2. Create Users
   const passwordHash = await bcrypt.hash("SignalFlow2026!", 10);

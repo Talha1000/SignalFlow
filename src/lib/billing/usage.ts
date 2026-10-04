@@ -117,6 +117,10 @@ export async function checkAndConsumePlanQuota(
   quantity: number = 1
 ): Promise<{ allowed: boolean; current: number; limit: number }> {
   return await prisma.$transaction(async (tx) => {
+    // True concurrency-safe row-level lock on the Workspace record in PostgreSQL.
+    // Serializes concurrent quota transactions for this workspace, preventing race overdrafts.
+    await tx.$executeRaw`SELECT id FROM "Workspace" WHERE id = ${workspaceId} FOR UPDATE`;
+
     const workspace = await tx.workspace.findUnique({
       where: { id: workspaceId },
       include: { usage: true },

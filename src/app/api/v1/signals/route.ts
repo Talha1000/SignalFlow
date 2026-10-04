@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { calculateLeadScore } from "@/lib/scoring/engine";
 import { executeWorkspaceAutomations } from "@/lib/automations/executor";
-import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
+import { checkRateLimit, checkRateLimitAsync, getClientIp, getRateLimitHeaders } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { ActivityType, IntentLevel, LeadStage } from "@prisma/client";
 import { z } from "zod";
@@ -49,23 +49,27 @@ export async function POST(request: Request) {
 
     // Rate Limiting: 300 signals/min per caller (API key or session user), plus 600 signals/min per workspace ceiling
     const callerRateKey = `signals:caller:${caller.apiKeyId || caller.userId || getClientIp(request)}`;
-    const callerLimit = checkRateLimit(callerRateKey, { limit: 300, windowMs: 60000 });
+    const callerLimit = await checkRateLimitAsync(callerRateKey, { limit: 300, windowMs: 60000 });
     if (!callerLimit.success) {
-      return apiError(
+      const errRes = apiError(
         "Signal ingestion rate limit exceeded (300 requests/minute). Please throttle client bursts.",
         429,
         "RATE_LIMITED"
       );
+      Object.entries(getRateLimitHeaders(callerLimit)).forEach(([k, v]) => errRes.headers.set(k, v));
+      return errRes;
     }
 
     const wsRateKey = `signals:ws:${caller.workspaceId}`;
-    const wsLimit = checkRateLimit(wsRateKey, { limit: 600, windowMs: 60000 });
+    const wsLimit = await checkRateLimitAsync(wsRateKey, { limit: 600, windowMs: 60000 });
     if (!wsLimit.success) {
-      return apiError(
+      const errRes = apiError(
         "Workspace global signal ingestion limit exceeded (600 requests/minute).",
         429,
         "RATE_LIMITED"
       );
+      Object.entries(getRateLimitHeaders(wsLimit)).forEach(([k, v]) => errRes.headers.set(k, v));
+      return errRes;
     }
 
     let rawBody: any;
@@ -152,6 +156,9 @@ export async function POST(request: Request) {
         });
       }
 
+      // Serializes all incoming signals for this company & lead using PostgreSQL row locking
+      await tx.$executeRaw`SELECT id FROM "Company" WHERE id = ${company.id} FOR UPDATE`;
+
       // 2. Find or create Contact if provided
       let contact = null;
       if (body.contactEmail) {
@@ -185,13 +192,12 @@ export async function POST(request: Request) {
           companyId: company.id,
           deletedAt: null,
         },
-        include: {
-          activities: {
-            take: 15,
-            orderBy: { createdAt: "desc" },
-          },
-        },
       });
+
+      if (lead) {
+        // Lock lead row exclusively during score recalculation
+        await tx.$executeRaw`SELECT id FROM "Lead" WHERE id = ${lead.id} FOR UPDATE`;
+      }
 
       // 4. Record Activity in database
       const activity = await tx.activity.create({
@@ -207,28 +213,25 @@ export async function POST(request: Request) {
         },
       });
 
-      // 5. Recalculate lead score if lead exists
+      // 5. Recalculate lead score if lead exists under row lock
       let previousScore = lead?.score ?? 0;
       let newScore = previousScore;
       let intentLevel: IntentLevel = lead?.intentLevel ?? IntentLevel.COLD;
       let scoreResult = null;
 
       if (lead) {
-        const existingActivities = [
-          ...lead.activities,
-          {
-            type: actType,
-            createdAt: new Date(),
-            title: activity.title,
-            description: activity.description,
-          },
-        ];
+        // Fetch all activities fresh under the row lock to guarantee inclusion of all concurrent signals
+        const allActivities = await tx.activity.findMany({
+          where: { leadId: lead.id },
+          take: 20,
+          orderBy: { createdAt: "desc" },
+        });
 
         scoreResult = calculateLeadScore({
           title: body.contactTitle || "Engineering Leader",
           companySize: company.size,
           industry: company.industry,
-          activities: existingActivities.map((a) => ({
+          activities: allActivities.map((a) => ({
             type: a.type,
             createdAt: a.createdAt,
             title: a.title,

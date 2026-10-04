@@ -7,7 +7,7 @@ import { executeWorkspaceAutomations } from "@/lib/automations/executor";
 import { PERMISSIONS } from "@/lib/auth/rbac";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { ActivityType, LeadStage, Prisma } from "@prisma/client";
-import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
+import { checkRateLimit, checkRateLimitAsync, getClientIp, getRateLimitHeaders } from "@/lib/security/rateLimit";
 import { checkAndConsumePlanQuota, PLAN_LIMITS } from "@/lib/billing/usage";
 import { z } from "zod";
 
@@ -148,9 +148,11 @@ export async function POST(request: Request) {
     // Rate Limiting: 60 lead creations per minute per caller
     const clientIp = getClientIp(request);
     const rateKey = `leads:create:${caller.apiKeyId || caller.userId || clientIp}`;
-    const rateCheck = checkRateLimit(rateKey, { limit: 60, windowMs: 60000 });
+    const rateCheck = await checkRateLimitAsync(rateKey, { limit: 60, windowMs: 60000 });
     if (!rateCheck.success) {
-      return apiError("Lead creation rate limit exceeded (60 requests/min)", 429, "RATE_LIMITED");
+      const errRes = apiError("Lead creation rate limit exceeded (60 requests/min)", 429, "RATE_LIMITED");
+      Object.entries(getRateLimitHeaders(rateCheck)).forEach(([k, v]) => errRes.headers.set(k, v));
+      return errRes;
     }
 
     let rawBody: any;
@@ -179,6 +181,9 @@ export async function POST(request: Request) {
     // Atomically execute lead creation, company/contact resolution, score records, and quota increment
     // If any database operation fails, the transaction rolls back completely and NO quota is consumed.
     const createdData = await prisma.$transaction(async (tx) => {
+      // Row-level lock on Workspace serializes concurrent lead creations for this tenant
+      await tx.$executeRaw`SELECT id FROM "Workspace" WHERE id = ${caller.workspaceId} FOR UPDATE`;
+
       // 1. Check workspace plan quota within transaction
       const workspace = await tx.workspace.findUnique({
         where: { id: caller.workspaceId },
