@@ -16,10 +16,10 @@ export function Card({
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={twMerge(
         clsx(
-          "rounded-xl border transition-all duration-200",
+          "rounded-3xl border transition-all duration-200",
           glass
             ? "glass-panel"
-            : "bg-slate-900/80 border-slate-800/90 text-slate-100 shadow-sm",
+            : "bg-[#1e2224] light:bg-[#ffffff] border-white/10 light:border-black/10 text-white light:text-[#121212] shadow-sm",
           className
         )
       )}
@@ -36,7 +36,7 @@ export function CardHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={twMerge("p-5 border-b border-slate-800/80", className)} {...props}>
+    <div className={twMerge("p-5 sm:p-6 border-b border-white/10 light:border-black/10", className)} {...props}>
       {children}
     </div>
   );
@@ -49,7 +49,7 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={twMerge("text-base font-semibold tracking-tight text-white", className)}
+      className={twMerge("text-base font-bold tracking-tight text-white light:text-[#121212]", className)}
       {...props}
     >
       {children}
@@ -63,7 +63,7 @@ export function CardDescription({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={twMerge("text-xs text-slate-400 mt-1", className)} {...props}>
+    <p className={twMerge("text-xs text-slate-300 light:text-[#4a5053] mt-1", className)} {...props}>
       {children}
     </p>
   );
@@ -75,7 +75,7 @@ export function CardContent({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={twMerge("p-5", className)} {...props}>
+    <div className={twMerge("p-5 sm:p-6", className)} {...props}>
       {children}
     </div>
   );
@@ -88,7 +88,7 @@ export function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={twMerge("p-5 border-t border-slate-800/80 flex items-center justify-between", className)}
+      className={twMerge("p-5 sm:p-6 border-t border-white/10 light:border-black/10 flex items-center justify-between", className)}
       {...props}
     >
       {children}

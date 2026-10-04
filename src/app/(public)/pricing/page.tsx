@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ArrowRight, Sparkles, HelpCircle } from "lucide-react";
+import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function PricingPage() {
@@ -94,34 +94,35 @@ export default function PricingPage() {
     <div className="relative py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Title */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-0.5 text-xs font-medium text-cyan-400">
-          <Sparkles className="h-3 w-3" /> Transparent Commercial Pricing
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-[#38b6ff]/30 bg-[#38b6ff]/10 px-3.5 py-1 text-xs font-semibold text-[#38b6ff] light:text-[#0284c7]">
+          <Sparkles className="h-3.5 w-3.5" /> Transparent Commercial Pricing
         </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white light:text-[#121212]">
           Predictable pricing that scales with revenue
         </h1>
-        <p className="text-sm sm:text-base text-slate-400">
+        <p className="text-sm sm:text-base text-slate-300 light:text-[#4a5053]">
           Prioritize your pipeline with explainable AI. No hidden overage charges or lock-ins.
         </p>
 
         {/* Annual / Monthly Toggle */}
         <div className="pt-6 flex items-center justify-center gap-3">
-          <span className={`text-xs font-medium ${!annual ? "text-white" : "text-slate-400"}`}>
+          <span className={`text-xs font-medium ${!annual ? "text-white light:text-[#121212]" : "text-slate-400 light:text-[#787e82]"}`}>
             Billed Monthly
           </span>
           <button
             onClick={() => setAnnual(!annual)}
-            className="relative h-6 w-12 rounded-full bg-slate-800 p-0.5 transition-colors focus:outline-none border border-slate-700"
+            className="relative h-6 w-12 rounded-full bg-[#252a2b] light:bg-[#e2e8f0] p-0.5 transition-colors focus:outline-none border border-white/10 light:border-black/10"
+            aria-label="Toggle annual billing"
           >
             <div
-              className={`h-5 w-5 rounded-full bg-cyan-400 transition-transform ${
+              className={`h-5 w-5 rounded-full bg-[#38b6ff] light:bg-[#0284c7] transition-transform ${
                 annual ? "translate-x-6" : "translate-x-0"
               }`}
             />
           </button>
-          <span className={`text-xs font-medium ${annual ? "text-white" : "text-slate-400"} flex items-center gap-1.5`}>
+          <span className={`text-xs font-medium ${annual ? "text-white light:text-[#121212]" : "text-slate-400 light:text-[#787e82]"} flex items-center gap-1.5`}>
             Billed Annually
-            <span className="rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-bold px-2 py-0.5 border border-cyan-500/30">
+            <span className="rounded-full bg-[#38b6ff]/20 text-[#38b6ff] light:text-[#0284c7] text-[10px] font-bold px-2 py-0.5 border border-[#38b6ff]/30">
               Save 20%
             </span>
           </span>
@@ -133,52 +134,52 @@ export default function PricingPage() {
         {tiers.map((tier) => (
           <div
             key={tier.name}
-            className={`rounded-2xl border flex flex-col justify-between p-6 transition-all duration-200 relative ${
+            className={`rounded-3xl border flex flex-col justify-between p-6 transition-all duration-200 relative ${
               tier.highlight
-                ? "bg-gradient-to-b from-slate-900 to-slate-950 border-cyan-500/50 shadow-2xl shadow-cyan-950/40 ring-1 ring-cyan-500/30"
-                : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
+                ? "bg-[#1e2224] light:bg-[#ffffff] border-[#38b6ff] light:border-[#0284c7] shadow-xl ring-2 ring-[#38b6ff]/30 light:ring-[#0284c7]/30"
+                : "bg-[#1e2224] light:bg-[#ffffff] border-white/10 light:border-black/10 shadow-sm hover:border-[#38b6ff]/40"
             }`}
           >
             {tier.badge && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-950 shadow-md">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#38b6ff] text-slate-950 px-3.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-md">
                 {tier.badge}
               </span>
             )}
 
             <div>
-              <h3 className="text-lg font-bold text-white">{tier.name}</h3>
-              <p className="mt-1 text-xs text-slate-400 min-h-[36px]">{tier.description}</p>
+              <h3 className="text-lg font-bold text-white light:text-[#121212]">{tier.name}</h3>
+              <p className="mt-1 text-xs text-slate-400 light:text-[#787e82] min-h-[36px]">{tier.description}</p>
 
               <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-3xl font-extrabold font-mono text-white">
+                <span className="text-3xl font-extrabold font-mono text-white light:text-[#121212]">
                   ${annual ? tier.annualPrice : tier.monthlyPrice}
                 </span>
-                <span className="text-xs text-slate-400">/ month</span>
+                <span className="text-xs text-slate-400 light:text-[#787e82]">/ month</span>
               </div>
               {annual && tier.annualPrice > 0 && (
-                <p className="text-[10px] text-cyan-400 mt-0.5">Billed annually</p>
+                <p className="text-[10px] text-[#38b6ff] light:text-[#0284c7] font-medium mt-0.5">Billed annually</p>
               )}
 
-              <div className="mt-6 pt-6 border-t border-slate-800 space-y-2.5 text-xs">
-                <div className="text-slate-300 font-medium">Included Quotas:</div>
-                <div className="text-slate-400 flex items-center justify-between">
+              <div className="mt-6 pt-6 border-t border-white/10 light:border-black/10 space-y-2.5 text-xs">
+                <div className="text-white light:text-[#121212] font-semibold">Included Quotas:</div>
+                <div className="text-slate-400 light:text-[#787e82] flex items-center justify-between">
                   <span>Lead Capacity:</span>
-                  <span className="font-mono text-white">{tier.leads}</span>
+                  <span className="font-mono text-white light:text-[#121212] font-medium">{tier.leads}</span>
                 </div>
-                <div className="text-slate-400 flex items-center justify-between">
+                <div className="text-slate-400 light:text-[#787e82] flex items-center justify-between">
                   <span>AI Intelligence Credits:</span>
-                  <span className="font-mono text-white">{tier.aiCredits}</span>
+                  <span className="font-mono text-white light:text-[#121212] font-medium">{tier.aiCredits}</span>
                 </div>
-                <div className="text-slate-400 flex items-center justify-between">
+                <div className="text-slate-400 light:text-[#787e82] flex items-center justify-between">
                   <span>Team Seats:</span>
-                  <span className="font-mono text-white">{tier.seats}</span>
+                  <span className="font-mono text-white light:text-[#121212] font-medium">{tier.seats}</span>
                 </div>
 
-                <div className="pt-4 text-slate-300 font-medium">Capabilities:</div>
-                <ul className="space-y-2 pt-1 text-slate-400">
+                <div className="pt-4 text-white light:text-[#121212] font-semibold">Capabilities:</div>
+                <ul className="space-y-2 pt-1 text-slate-300 light:text-[#4a5053]">
                   {tier.features.map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7] shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
                   ))}
@@ -189,7 +190,7 @@ export default function PricingPage() {
             <div className="mt-8 pt-4">
               <Link href="/signup">
                 <Button
-                  variant={tier.highlight ? "gradient" : "outline"}
+                  variant={tier.highlight ? "pill" : "outline"}
                   className="w-full justify-center"
                 >
                   {tier.cta}
@@ -201,10 +202,10 @@ export default function PricingPage() {
       </div>
 
       {/* Enterprise callout */}
-      <div className="mt-16 rounded-2xl border border-slate-800 bg-slate-900/50 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="mt-16 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-sm p-8 flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
-          <h3 className="text-xl font-bold text-white">Enterprise & Custom Workspaces</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+          <h3 className="text-xl font-bold text-white light:text-[#121212]">Enterprise & Custom Workspaces</h3>
+          <p className="text-xs text-slate-300 light:text-[#4a5053] mt-1 max-w-2xl leading-relaxed">
             Need custom tenant isolation, dedicated database instances, custom CRM connectors, or
             custom AI scoring weight calibration? Let our solutions engineering team assist.
           </p>

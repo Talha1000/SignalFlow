@@ -4,22 +4,15 @@ import React, { useState } from "react";
 import {
   Layers,
   Zap,
-  Plus,
-  Play,
   CheckCircle2,
   Clock,
   Sparkles,
   GitBranch,
   ArrowDown,
   Settings,
-  X,
-  Mail,
-  UserCheck,
-  Bell,
-  Code,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 
 interface WorkflowNode {
   id: string;
@@ -99,15 +92,15 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
   const getNodeIcon = (type: string) => {
     switch (type) {
       case "trigger":
-        return <Zap className="h-4 w-4 text-amber-400" />;
+        return <Zap className="h-4 w-4 text-amber-500" />;
       case "condition":
         return <GitBranch className="h-4 w-4 text-purple-400" />;
       case "aiAction":
-        return <Sparkles className="h-4 w-4 text-cyan-400" />;
+        return <Sparkles className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7]" />;
       case "delay":
         return <Clock className="h-4 w-4 text-blue-400" />;
       default:
-        return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
     }
   };
 
@@ -128,24 +121,24 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Layers className="h-6 w-6 text-cyan-400" />
+          <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+            <Layers className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
             Visual Workflow Automation Builder
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-300 light:text-[#4a5053] mt-0.5">
             Orchestrate instant routing, AI-generated touchpoints, and cadence enrollments.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400">Workflow Status:</span>
+            <span className="text-slate-400 light:text-[#787e82]">Workflow Status:</span>
             <button
               onClick={() => setIsActive(!isActive)}
-              className={`px-2.5 py-1 rounded-full text-xs font-mono font-semibold border transition-all ${
+              className={`px-3 py-1 rounded-full text-xs font-mono font-bold border transition-all ${
                 isActive
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                  : "bg-slate-800 text-slate-400 border-slate-700"
+                  ? "bg-emerald-500/15 text-emerald-500 light:text-emerald-600 border-emerald-500/30"
+                  : "bg-[#252a2b] light:bg-[#e2e8f0] text-slate-400 light:text-[#787e82] border-white/10 light:border-black/10"
               }`}
             >
               {isActive ? "● ACTIVE" : "○ PAUSED"}
@@ -166,16 +159,16 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
       {activeTab === "builder" ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Visual Canvas Area */}
-          <div className="lg:col-span-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-6 relative overflow-hidden min-h-[600px] flex flex-col items-center">
+          <div className="lg:col-span-8 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm relative overflow-hidden min-h-[600px] flex flex-col items-center">
             {/* Toolbar */}
-            <div className="w-full flex items-center justify-between pb-4 mb-6 border-b border-slate-800 text-xs">
-              <span className="font-semibold text-slate-300">Hot Lead Routing Workflow</span>
+            <div className="w-full flex items-center justify-between pb-4 mb-6 border-b border-white/10 light:border-black/10 text-xs">
+              <span className="font-bold text-white light:text-[#121212]">Hot Lead Routing Workflow</span>
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddNode("action")}
-                  className="text-[11px] h-7 px-2"
+                  className="text-[11px] h-7 px-2.5"
                 >
                   + Add Action
                 </Button>
@@ -183,7 +176,7 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddNode("aiAction")}
-                  className="text-[11px] h-7 px-2 border-cyan-500/30 text-cyan-300"
+                  className="text-[11px] h-7 px-2.5 border-[#38b6ff]/30 text-[#38b6ff] light:text-[#0284c7]"
                 >
                   <Sparkles className="h-3 w-3 mr-1" /> + AI Action
                 </Button>
@@ -191,7 +184,7 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddNode("delay")}
-                  className="text-[11px] h-7 px-2"
+                  className="text-[11px] h-7 px-2.5"
                 >
                   + Delay
                 </Button>
@@ -204,31 +197,31 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
                 <React.Fragment key={n.id}>
                   <div
                     onClick={() => setSelectedNode(n)}
-                    className={`rounded-xl border p-4 cursor-pointer transition-all duration-150 relative shadow-sm ${
+                    className={`rounded-2xl border p-4 cursor-pointer transition-all duration-150 relative shadow-sm ${
                       selectedNode?.id === n.id
-                        ? "bg-slate-900 border-cyan-400 ring-2 ring-cyan-500/20"
-                        : "bg-slate-950/80 border-slate-800 hover:border-slate-700"
+                        ? "bg-[#252a2b] light:bg-[#f0f2f3] border-[#38b6ff] light:border-[#0284c7] ring-2 ring-[#38b6ff]/20"
+                        : "bg-[#252a2b] light:bg-[#ffffff] border-white/10 light:border-black/10 hover:border-[#38b6ff]/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="p-1.5 rounded-xl bg-[#1e2224] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
                           {getNodeIcon(n.type)}
                         </div>
-                        <span className="text-xs font-bold text-white">{n.title}</span>
+                        <span className="text-xs font-bold text-white light:text-[#121212]">{n.title}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-500 uppercase">
+                      <span className="text-[10px] font-mono text-slate-400 light:text-[#787e82] uppercase font-semibold">
                         {n.type}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                    <p className="text-[11px] text-slate-300 light:text-[#4a5053] mt-2 leading-relaxed">
                       {n.description}
                     </p>
                   </div>
 
                   {i < nodes.length - 1 && (
                     <div className="flex justify-center -my-1">
-                      <ArrowDown className="h-4 w-4 text-cyan-500/60" />
+                      <ArrowDown className="h-4 w-4 text-[#38b6ff]/70 light:text-[#0284c7]/70" />
                     </div>
                   )}
                 </React.Fragment>
@@ -237,14 +230,14 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
           </div>
 
           {/* Node Inspector Side Panel */}
-          <div className="lg:col-span-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Settings className="h-4 w-4 text-cyan-400" />
+          <div className="lg:col-span-4 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 light:border-black/10">
+              <h3 className="text-sm font-bold text-white light:text-[#121212] flex items-center gap-2">
+                <Settings className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7]" />
                 Node Inspector
               </h3>
               {selectedNode && (
-                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                <span className="text-[10px] font-mono text-[#38b6ff] light:text-[#0284c7] bg-[#38b6ff]/10 px-2.5 py-0.5 rounded-full border border-[#38b6ff]/20 font-semibold">
                   {selectedNode.type}
                 </span>
               )}
@@ -261,26 +254,26 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
                 />
 
                 <div className="space-y-1.5">
-                  <label className="block text-slate-300">Description</label>
+                  <label className="block text-white light:text-[#121212] font-semibold">Description</label>
                   <textarea
                     rows={3}
                     value={selectedNode.description}
                     onChange={(e) =>
                       setSelectedNode({ ...selectedNode, description: e.target.value })
                     }
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 text-xs focus:border-cyan-500 focus:outline-none"
+                    className="w-full rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-3 text-white light:text-[#121212] text-xs focus:border-[#38b6ff] focus:outline-none"
                   />
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                  <span className="font-semibold text-slate-300">Execution Parameters</span>
-                  <div className="font-mono text-[11px] text-slate-400">
+                <div className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-2">
+                  <span className="font-bold text-white light:text-[#121212]">Execution Parameters</span>
+                  <div className="font-mono text-[11px] text-slate-300 light:text-[#4a5053]">
                     {JSON.stringify(selectedNode.data, null, 2)}
                   </div>
                 </div>
 
                 <Button
-                  variant="gradient"
+                  variant="pill"
                   size="sm"
                   className="w-full justify-center"
                   onClick={() => alert("Node parameters updated successfully!")}
@@ -289,7 +282,7 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
                 </Button>
               </div>
             ) : (
-              <p className="text-xs text-slate-500 text-center py-12">
+              <p className="text-xs text-slate-400 light:text-[#787e82] text-center py-12">
                 Click any node on the canvas to inspect its configuration.
               </p>
             )}
@@ -297,25 +290,25 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
         </div>
       ) : (
         /* Execution Runs Log */
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <h3 className="text-base font-bold text-white">Recent Automation Executions</h3>
-          <div className="divide-y divide-slate-800 text-xs">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
+          <h3 className="text-base font-bold text-white light:text-[#121212]">Recent Automation Executions</h3>
+          <div className="divide-y divide-white/10 light:divide-black/10 text-xs">
             {[
               { lead: "Sarah Chen (Acme Tech)", trigger: "Score 91 reached", time: "10m ago", status: "SUCCESS" },
               { lead: "Marcus Vance (ApexCloud)", trigger: "Demo page visited", time: "42m ago", status: "SUCCESS" },
               { lead: "Victor Stone (SecurityZero)", trigger: "API specs evaluated", time: "1h ago", status: "SUCCESS" },
               { lead: "Kieran O'Connor (HyperScale)", trigger: "Score 89 reached", time: "3h ago", status: "SUCCESS" },
             ].map((run, i) => (
-              <div key={i} className="py-3 flex items-center justify-between">
+              <div key={i} className="py-3.5 flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-white">{run.lead}</div>
-                  <div className="text-[11px] text-slate-400">{run.trigger}</div>
+                  <div className="font-bold text-white light:text-[#121212]">{run.lead}</div>
+                  <div className="text-[11px] text-slate-400 light:text-[#787e82]">{run.trigger}</div>
                 </div>
                 <div className="text-right">
-                  <span className="font-mono text-emerald-400 text-[10px] font-bold">
+                  <span className="font-mono text-emerald-500 font-bold text-[10px]">
                     ✔ {run.status}
                   </span>
-                  <div className="text-[10px] text-slate-500">{run.time}</div>
+                  <div className="text-[10px] text-slate-400 light:text-[#787e82]">{run.time}</div>
                 </div>
               </div>
             ))}

@@ -1,59 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Settings, Shield, Key, CreditCard, Sliders, CheckCircle2 } from 'lucide-react';
 
 const tabs = [
-  { id: 'general', label: 'General' },
-  { id: 'billing', label: 'Billing' },
-  { id: 'security', label: 'Security' },
-  { id: 'api', label: 'API Keys' },
+  { id: 'general', label: 'General', icon: Sliders },
+  { id: 'billing', label: 'Billing', icon: CreditCard },
+  { id: 'security', label: 'Security', icon: Shield },
+  { id: 'api', label: 'API Keys', icon: Key },
 ];
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Manage your workspace configuration.
+        <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+          <Settings className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
+          Workspace Settings
+        </h1>
+        <p className="text-xs text-slate-300 light:text-[#4a5053] mt-0.5">
+          Manage your organization profile, multi-tenant security policies, and API keys.
         </p>
       </div>
 
-      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex gap-1 border-b border-white/10 light:border-black/10 overflow-x-auto text-xs font-semibold no-scrollbar">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-[#38b6ff] text-[#38b6ff] light:border-[#0284c7] light:text-[#0284c7] font-bold'
+                  : 'border-transparent text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212]'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === 'general' && (
-        <Card className="p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Workspace Settings</h3>
-          <div className="space-y-3">
+        <Card className="p-6 sm:p-8 space-y-6">
+          <h3 className="font-bold text-white light:text-[#121212] text-base">General Information</h3>
+          <div className="space-y-4 max-w-md">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workspace Name</label>
+              <label className="block text-xs font-semibold text-slate-300 light:text-[#4a5053] mb-1.5">Workspace Name</label>
               <input
                 type="text"
                 defaultValue="SignalFlow Demo"
-                className="w-full max-w-md px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                className="w-full px-3.5 py-2 border border-white/10 light:border-black/10 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] text-white light:text-[#121212] text-xs focus:outline-none focus:border-[#38b6ff]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timezone</label>
-              <select className="w-full max-w-md px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+              <label className="block text-xs font-semibold text-slate-300 light:text-[#4a5053] mb-1.5">Timezone</label>
+              <select className="w-full px-3.5 py-2 border border-white/10 light:border-black/10 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] text-white light:text-[#121212] text-xs focus:outline-none focus:border-[#38b6ff]">
                 <option>UTC</option>
                 <option>America/New_York</option>
                 <option>America/Chicago</option>
@@ -63,40 +71,42 @@ export default function SettingsPage() {
               </select>
             </div>
           </div>
-          <Button variant="primary" size="sm">Save Changes</Button>
+          <div className="pt-2">
+            <Button variant="pill" size="sm">Save Changes</Button>
+          </div>
         </Card>
       )}
 
       {activeTab === 'billing' && (
-        <Card className="p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Billing &amp; Subscription</h3>
-          <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <span className="text-green-600 dark:text-green-400 text-lg">✓</span>
+        <Card className="p-6 sm:p-8 space-y-6">
+          <h3 className="font-bold text-white light:text-[#121212] text-base">Billing &amp; Subscription</h3>
+          <div className="flex items-center gap-3.5 p-4 bg-[#38b6ff]/10 border border-[#38b6ff]/20 rounded-2xl">
+            <CheckCircle2 className="h-5 w-5 text-[#38b6ff] light:text-[#0284c7] shrink-0" />
             <div>
-              <div className="font-medium text-green-800 dark:text-green-300">Free Plan — Active</div>
-              <div className="text-sm text-green-600 dark:text-green-400">You&apos;re on the free tier. All features included in demo mode.</div>
+              <div className="font-bold text-white light:text-[#121212] text-sm">Growth Tier — Active Plan</div>
+              <div className="text-xs text-slate-300 light:text-[#4a5053] mt-0.5">Your workspace includes 10,000 prioritized leads, sales copilot, and visual automation builder.</div>
             </div>
           </div>
         </Card>
       )}
 
       {activeTab === 'security' && (
-        <Card className="p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Security Settings</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+        <Card className="p-6 sm:p-8 space-y-6">
+          <h3 className="font-bold text-white light:text-[#121212] text-base">Security Policies</h3>
+          <div className="space-y-3.5 max-w-xl">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Two-Factor Authentication</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Add an extra layer of security.</div>
+                <div className="text-xs font-bold text-white light:text-[#121212]">Two-Factor Authentication</div>
+                <div className="text-[11px] text-slate-400 light:text-[#787e82]">Enforce hardware or app authenticator TOTP for all team members.</div>
               </div>
-              <Button variant="secondary" size="sm">Enable</Button>
+              <Button variant="outline" size="sm">Enable</Button>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Session Timeout</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Auto-logout after inactivity.</div>
+                <div className="text-xs font-bold text-white light:text-[#121212]">Session Inactivity Timeout</div>
+                <div className="text-[11px] text-slate-400 light:text-[#787e82]">Automatically rotate credentials after idle period.</div>
               </div>
-              <select className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+              <select className="px-3 py-1.5 text-xs border border-white/10 light:border-black/10 rounded-xl bg-[#1e2224] light:bg-[#ffffff] text-white light:text-[#121212] focus:outline-none">
                 <option>30 minutes</option>
                 <option>1 hour</option>
                 <option>4 hours</option>
@@ -108,21 +118,23 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 'api' && (
-        <Card className="p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white">API Keys</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage API keys for external integrations and webhook endpoints.
+        <Card className="p-6 sm:p-8 space-y-6">
+          <h3 className="font-bold text-white light:text-[#121212] text-base">Workspace API Keys</h3>
+          <p className="text-xs text-slate-300 light:text-[#4a5053]">
+            Manage cryptographically hashed SHA-256 API keys for programmatic telemetry ingestion and webhooks.
           </p>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-4 bg-[#252a2b] light:bg-[#f0f2f3] rounded-2xl border border-white/10 light:border-black/10 max-w-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-mono text-gray-700 dark:text-gray-300">sf_live_••••••••••••k4xm</div>
-                <div className="text-xs text-gray-400 mt-1">Created Sep 20, 2026</div>
+                <div className="text-xs font-mono font-bold text-[#38b6ff] light:text-[#0284c7]">sf_live_••••••••••••k4xm</div>
+                <div className="text-[10px] text-slate-400 light:text-[#787e82] mt-1 font-mono">Permissions: [read, write] • Created Sep 20, 2026</div>
               </div>
-              <Button variant="ghost" size="sm">Revoke</Button>
+              <Button variant="ghost" size="sm" className="text-rose-500 hover:text-rose-400">Revoke</Button>
             </div>
           </div>
-          <Button variant="secondary" size="sm">Generate New Key</Button>
+          <div>
+            <Button variant="pill" size="sm">Generate New Key</Button>
+          </div>
         </Card>
       )}
     </div>

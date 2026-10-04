@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Shield, Lock, Key, Database, FileText, CheckCircle2, ArrowRight } from "lucide-react";
+import { Shield, Lock, Key, Database, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function SecurityPage() {
@@ -34,13 +34,13 @@ export default function SecurityPage() {
   return (
     <div className="py-16 sm:py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-0.5 text-xs font-medium text-cyan-400">
-          <Shield className="h-3 w-3" /> Enterprise Security & Compliance
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-[#38b6ff]/30 bg-[#38b6ff]/10 px-3.5 py-1 text-xs font-semibold text-[#38b6ff] light:text-[#0284c7]">
+          <Shield className="h-3.5 w-3.5" /> Enterprise Security & Compliance
         </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white light:text-[#121212]">
           Security built as an immutable foundation
         </h1>
-        <p className="text-sm sm:text-base text-slate-400">
+        <p className="text-sm sm:text-base text-slate-300 light:text-[#4a5053]">
           SignalFlow was architected from line one to protect enterprise customer data and ensure
           flawless multi-tenant boundary integrity.
         </p>
@@ -52,33 +52,33 @@ export default function SecurityPage() {
           return (
             <div
               key={p.title}
-              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-8 space-y-4"
+              className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-sm p-8 space-y-4"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10">
                 <Icon className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-bold text-white">{p.title}</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{p.description}</p>
+              <h3 className="text-xl font-bold text-white light:text-[#121212]">{p.title}</h3>
+              <p className="text-xs sm:text-sm text-slate-300 light:text-[#4a5053] leading-relaxed">{p.description}</p>
             </div>
           );
         })}
       </div>
 
       {/* Compliance standards table */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 space-y-4">
-        <h3 className="text-lg font-bold text-white">Enterprise Standards & Specifications</h3>
+      <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-sm p-8 space-y-4">
+        <h3 className="text-lg font-bold text-white light:text-[#121212]">Enterprise Standards & Specifications</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-xs">
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-cyan-400 font-mono font-semibold">SOC2 Type II Ready</span>
-            <p className="text-slate-400">Security, Availability, and Confidentiality controls</p>
+          <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">SOC2 Type II Ready</span>
+            <p className="text-slate-400 light:text-[#787e82]">Security, Availability, and Confidentiality controls</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-cyan-400 font-mono font-semibold">GDPR & CCPA Compliant</span>
-            <p className="text-slate-400">Full data subject request and export capabilities</p>
+          <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">GDPR & CCPA Compliant</span>
+            <p className="text-slate-400 light:text-[#787e82]">Full data subject request and export capabilities</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-cyan-400 font-mono font-semibold">TLS 1.3 & AES-256</span>
-            <p className="text-slate-400">Encrypted in transit and at rest at all times</p>
+          <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+            <span className="text-[#38b6ff] light:text-[#0284c7] font-mono font-semibold">TLS 1.3 & AES-256</span>
+            <p className="text-slate-400 light:text-[#787e82]">Encrypted in transit and at rest at all times</p>
           </div>
         </div>
       </div>

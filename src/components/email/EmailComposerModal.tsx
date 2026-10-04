@@ -2,16 +2,12 @@
 
 import React, { useState } from "react";
 import {
-  Mail,
   Sparkles,
   Send,
-  Clock,
   CheckCircle2,
-  Sliders,
-  FileText,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { Input, Select } from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 interface EmailComposerProps {
@@ -94,34 +90,34 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
             <CheckCircle2 className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-bold text-white">Email Sent & Logged</h3>
-          <p className="text-xs text-slate-400">
+          <h3 className="text-base font-bold text-white light:text-[#121212]">Email Sent & Logged</h3>
+          <p className="text-xs text-slate-400 light:text-[#787e82]">
             Outreach recorded in lead activity timeline. Next cadence step scheduled.
           </p>
         </div>
       ) : (
         <div className="space-y-4 text-xs">
           {/* Recipient info bar */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 text-slate-300 light:text-[#4a5053]">
             <div>
-              <span className="text-slate-500">To: </span>
-              <span className="font-semibold text-white">{lead.name}</span>{" "}
-              <span className="font-mono text-slate-400">&lt;{lead.email}&gt;</span>
+              <span className="text-slate-400 light:text-[#787e82]">To: </span>
+              <span className="font-bold text-white light:text-[#121212]">{lead.name}</span>{" "}
+              <span className="font-mono text-slate-400 light:text-[#787e82]">&lt;{lead.email}&gt;</span>
             </div>
-            <span className="font-mono text-cyan-400 font-semibold bg-cyan-500/10 px-2 py-0.5 rounded">
+            <span className="font-mono text-[#38b6ff] light:text-[#0284c7] font-bold bg-[#38b6ff]/10 px-2.5 py-1 rounded-full border border-[#38b6ff]/20">
               Score: {lead.score}
             </span>
           </div>
 
           {/* AI Assist Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-cyan-950/20 border border-cyan-800/40">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-[#38b6ff]/10 border border-[#38b6ff]/20">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-cyan-400" />
-              <span className="font-semibold text-cyan-300">AI Personalize:</span>
+              <Sparkles className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7]" />
+              <span className="font-semibold text-[#38b6ff] light:text-[#0284c7]">AI Personalize:</span>
               <select
                 value={tone}
                 onChange={(e: any) => setTone(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:outline-none"
+                className="bg-[#1e2224] light:bg-[#ffffff] border border-white/10 light:border-black/10 rounded-xl px-3 py-1.5 text-white light:text-[#121212] text-xs focus:outline-none"
               >
                 <option value="consultative">Consultative (ROI focus)</option>
                 <option value="direct">Direct & Concise</option>
@@ -134,9 +130,9 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
               size="sm"
               onClick={handleAiRewrite}
               loading={isAiRewriting}
-              className="text-xs py-1 h-7 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10"
+              className="text-xs py-1 h-8 rounded-full border-[#38b6ff]/30 text-[#38b6ff] light:text-[#0284c7] hover:bg-[#38b6ff]/10"
             >
-              <Sparkles className="h-3 w-3 mr-1" /> Re-draft with AI
+              <Sparkles className="h-3.5 w-3.5 mr-1" /> Re-draft with AI
             </Button>
           </div>
 
@@ -148,8 +144,8 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-medium text-slate-300">Body</label>
-              <span className="text-[10px] text-slate-500">
+              <label className="block text-xs font-semibold text-slate-300 light:text-[#4a5053]">Body</label>
+              <span className="text-[10px] text-slate-400 light:text-[#787e82]">
                 Variables: {`{{first_name}}, {{company}}, {{job_title}}`}
               </span>
             </div>
@@ -157,21 +153,21 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
               rows={8}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-sans leading-relaxed"
+              className="w-full rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-3.5 text-xs text-white light:text-[#121212] placeholder-slate-400 light:placeholder-[#787e82] focus:border-[#38b6ff] focus:outline-none focus:ring-1 focus:ring-[#38b6ff] font-sans leading-relaxed"
             />
           </div>
 
-          <div className="pt-2 flex items-center justify-between border-t border-slate-800">
+          <div className="pt-3 flex items-center justify-between border-t border-white/10 light:border-black/10">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400">
-                Auto-stop cadence rule: <span className="text-emerald-400">ACTIVE</span>
+              <span className="text-[11px] text-slate-400 light:text-[#787e82]">
+                Auto-stop cadence rule: <span className="text-emerald-500 font-semibold">ACTIVE</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={onClose}>
                 Cancel
               </Button>
-              <Button variant="gradient" size="sm" onClick={handleSend} className="gap-1.5">
+              <Button variant="pill" size="sm" onClick={handleSend} className="gap-1.5">
                 Send Email Now <Send className="h-3.5 w-3.5" />
               </Button>
             </div>

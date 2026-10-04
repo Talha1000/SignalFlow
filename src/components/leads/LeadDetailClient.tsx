@@ -10,20 +10,12 @@ import {
   UserPlus,
   Zap,
   Sparkles,
-  TrendingUp,
   Clock,
-  Building,
-  Users,
-  Shield,
   CheckCircle2,
-  Calendar,
-  ExternalLink,
-  Plus,
   Send,
 } from "lucide-react";
-import { IntentBadge, ScoreBadge, StageBadge, Badge } from "@/components/ui/Badge";
+import { IntentBadge, StageBadge, Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { EmailComposerModal } from "@/components/email/EmailComposerModal";
 
@@ -48,7 +40,6 @@ export function LeadDetailClient({
     | "notes"
     | "company"
     | "contacts"
-    | "sequences"
     | "history"
   >("overview");
 
@@ -99,44 +90,90 @@ export function LeadDetailClient({
       type: "NOTE",
       title: "Rep Note Added",
       description: newNote,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
-    setLead({
-      ...lead,
-      activities: [newActivity, ...lead.activities],
-    });
-    setNewNote("");
-    setNoteModalOpen(false);
+    try {
+      await fetch("/api/v1/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: lead.id,
+          type: "NOTE",
+          title: "Rep Note Added",
+          description: newNote,
+        }),
+      });
+      setLead({
+        ...lead,
+        activities: [newActivity, ...(lead.activities || [])],
+      });
+      setNewNote("");
+      setNoteModalOpen(false);
+    } catch {
+      setLead({
+        ...lead,
+        activities: [newActivity, ...(lead.activities || [])],
+      });
+      setNewNote("");
+      setNoteModalOpen(false);
+    }
   };
 
-  const handleLogCall = () => {
-    const newActivity = {
+  const handleLogCall = async () => {
+    const callAct = {
       id: `act-${Date.now()}`,
       type: "CALL",
-      title: `Call Logged (${callOutcome})`,
-      description: "Direct phone conversation regarding evaluation timeline.",
-      createdAt: new Date(),
+      title: `Call: ${callOutcome}`,
+      description: `Outbound sales call logged. Status: ${callOutcome}`,
+      createdAt: new Date().toISOString(),
     };
-    setLead({
-      ...lead,
-      activities: [newActivity, ...lead.activities],
-    });
-    setCallModalOpen(false);
+    try {
+      await fetch("/api/v1/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: lead.id,
+          type: "CALL",
+          title: `Call: ${callOutcome}`,
+          description: `Outbound sales call logged. Status: ${callOutcome}`,
+        }),
+      });
+      setLead({
+        ...lead,
+        activities: [callAct, ...(lead.activities || [])],
+      });
+      setCallModalOpen(false);
+    } catch {
+      setLead({
+        ...lead,
+        activities: [callAct, ...(lead.activities || [])],
+      });
+      setCallModalOpen(false);
+    }
   };
 
-  const handleAssignOwner = () => {
-    const owner = teamMembers.find((m) => m.id === selectedOwner);
-    setLead({
-      ...lead,
-      ownerId: selectedOwner,
-      owner: owner || lead.owner,
-    });
-    setAssignModalOpen(false);
+  const handleAssignOwner = async () => {
+    try {
+      await fetch(`/api/v1/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerId: selectedOwner || null }),
+      });
+      const member = teamMembers.find((m) => m.id === selectedOwner);
+      setLead({
+        ...lead,
+        ownerId: selectedOwner,
+        owner: member ? { name: member.name, email: member.email } : null,
+      });
+      setAssignModalOpen(false);
+    } catch {
+      setAssignModalOpen(false);
+    }
   };
 
   const contactName = lead.contact
     ? `${lead.contact.firstName} ${lead.contact.lastName}`
-    : "Lead Contact";
+    : "Anonymous Prospect";
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -144,51 +181,51 @@ export function LeadDetailClient({
       <div>
         <Link
           href="/app/leads"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-400 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 light:text-[#787e82] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to Priority Leads
         </Link>
       </div>
 
       {/* Main Header Card */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl space-y-6">
+      <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           {/* Identity */}
           <div className="flex items-start gap-4">
-            <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-950 border border-slate-800 shrink-0 w-20">
-              <span className="text-3xl font-extrabold font-mono text-white tracking-tight">
+            <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 shrink-0 w-20">
+              <span className="text-3xl font-extrabold font-mono text-white light:text-[#121212] tracking-tight">
                 {lead.score}
               </span>
-              <span className="text-[10px] font-mono text-slate-500">/ 100</span>
+              <span className="text-[10px] font-mono text-slate-400 light:text-[#787e82]">/ 100</span>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-white">{contactName}</h1>
+                <h1 className="text-2xl font-bold text-white light:text-[#121212]">{contactName}</h1>
                 <IntentBadge level={lead.intentLevel} />
                 <StageBadge stage={lead.stage} />
                 {lead.dealValue > 0 && (
-                  <span className="text-xs font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-xs font-mono font-semibold text-emerald-500 light:text-emerald-600 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                     ${lead.dealValue.toLocaleString()} deal value
                   </span>
                 )}
               </div>
 
-              <div className="text-xs text-slate-300 flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-200">
+              <div className="text-xs text-slate-300 light:text-[#4a5053] flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-white light:text-[#121212]">
                   {lead.contact?.title || "Decision Maker"}
                 </span>
-                <span className="text-slate-500">at</span>
+                <span className="text-slate-400 light:text-[#787e82]">at</span>
                 <Link
                   href={lead.company ? `/app/companies/${lead.company.id}` : "#"}
-                  className="font-bold text-cyan-400 hover:underline"
+                  className="font-bold text-[#38b6ff] light:text-[#0284c7] hover:underline"
                 >
                   {lead.company?.name || "Direct Lead"}
                 </Link>
                 {lead.contact?.email && (
                   <>
-                    <span className="text-slate-500">•</span>
-                    <span className="font-mono text-slate-400">{lead.contact.email}</span>
+                    <span className="text-slate-400 light:text-[#787e82]">•</span>
+                    <span className="font-mono text-slate-400 light:text-[#787e82]">{lead.contact.email}</span>
                   </>
                 )}
               </div>
@@ -198,10 +235,10 @@ export function LeadDetailClient({
           {/* Quick Action Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="gradient"
+              variant="pill"
               size="sm"
               onClick={() => setComposerOpen(true)}
-              className="gap-1.5"
+              className="gap-1.5 shadow-sm"
             >
               <Mail className="h-3.5 w-3.5" /> Send Email
             </Button>
@@ -241,8 +278,8 @@ export function LeadDetailClient({
         </div>
 
         {/* Stage Pipeline Stepper */}
-        <div className="pt-4 border-t border-slate-800/80">
-          <div className="text-[10px] font-mono uppercase text-slate-500 mb-2 font-semibold">
+        <div className="pt-4 border-t border-white/10 light:border-black/10">
+          <div className="text-[10px] font-mono uppercase text-slate-400 light:text-[#787e82] mb-2.5 font-bold">
             Sales Pipeline Stage (Click to advance)
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-9 gap-1.5 text-center">
@@ -255,12 +292,12 @@ export function LeadDetailClient({
                 <button
                   key={st}
                   onClick={() => handleStageChange(st)}
-                  className={`py-1.5 px-1 rounded text-[11px] font-medium transition-all ${
+                  className={`py-1.5 px-1 rounded-xl text-[11px] font-semibold transition-all ${
                     isCurrent
-                      ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
+                      ? "bg-[#38b6ff] light:bg-[#0284c7] text-slate-950 light:text-white font-bold shadow-md"
                       : isPast
-                      ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      : "bg-slate-950/60 text-slate-500 border border-slate-800 hover:text-slate-300"
+                      ? "bg-[#252a2b] light:bg-[#e2e8f0] text-white light:text-[#121212] hover:bg-[#38b6ff]/20"
+                      : "bg-[#1e2224] light:bg-[#ffffff] text-slate-400 light:text-[#787e82] border border-white/10 light:border-black/10 hover:text-white light:hover:text-[#121212]"
                   }`}
                 >
                   {st.charAt(0) + st.slice(1).toLowerCase()}
@@ -272,7 +309,7 @@ export function LeadDetailClient({
       </div>
 
       {/* Tabs Header Navigation */}
-      <div className="flex border-b border-slate-800 overflow-x-auto text-xs font-medium no-scrollbar">
+      <div className="flex border-b border-white/10 light:border-black/10 overflow-x-auto text-xs font-semibold no-scrollbar">
         {[
           { key: "overview", label: "Overview" },
           { key: "ai", label: "AI Insights & Evidence" },
@@ -289,8 +326,8 @@ export function LeadDetailClient({
             onClick={() => setActiveTab(t.key as any)}
             className={`px-4 py-3 border-b-2 whitespace-nowrap transition-colors ${
               activeTab === t.key
-                ? "border-cyan-400 text-cyan-400 font-semibold"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-[#38b6ff] text-[#38b6ff] light:border-[#0284c7] light:text-[#0284c7] font-bold"
+                : "border-transparent text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212]"
             }`}
           >
             {t.label}
@@ -303,59 +340,59 @@ export function LeadDetailClient({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-8 space-y-6">
             {/* AI Action Box */}
-            <div className="rounded-xl border border-cyan-800/40 bg-gradient-to-r from-cyan-950/30 to-slate-900 p-5 space-y-2">
+            <div className="rounded-3xl border border-[#38b6ff]/30 bg-[#38b6ff]/10 p-6 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-cyan-400" />
+                <span className="text-xs font-bold text-[#38b6ff] light:text-[#0284c7] uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4" />
                   Recommended Next Play
                 </span>
-                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                <span className="text-[10px] font-mono font-semibold text-[#38b6ff] light:text-[#0284c7] bg-[#38b6ff]/15 px-2.5 py-0.5 rounded-full border border-[#38b6ff]/30">
                   Evidence Coverage: {lead.leadScore?.evidenceStrength ? `${(lead.leadScore.evidenceStrength * 100).toFixed(0)}%` : "85%"}
                 </span>
               </div>
-              <p className="text-xs text-slate-200 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-white light:text-[#121212] leading-relaxed font-medium">
                 "{lead.nextAction || "Contact within 2 hours. Offer a 20-minute architecture review and custom pricing sandbox."}"
               </p>
               <div className="pt-2 flex items-center gap-3">
-                <Button variant="gradient" size="sm" onClick={() => setComposerOpen(true)}>
+                <Button variant="pill" size="sm" onClick={() => setComposerOpen(true)}>
                   Execute Next Play <Send className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </div>
             </div>
 
             {/* Key Information Grid */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-              <h3 className="text-sm font-bold text-white">Lead Specifications</h3>
+            <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-white light:text-[#121212]">Lead Specifications</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
                 <div>
-                  <div className="text-slate-500 text-[11px]">Assigned Owner</div>
-                  <div className="font-semibold text-white mt-0.5">
+                  <div className="text-slate-400 light:text-[#787e82] text-[11px]">Assigned Owner</div>
+                  <div className="font-semibold text-white light:text-[#121212] mt-0.5">
                     {lead.owner?.name || "Unassigned"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-[11px]">Primary Source</div>
-                  <div className="font-semibold text-white mt-0.5 font-mono">{lead.source}</div>
+                  <div className="text-slate-400 light:text-[#787e82] text-[11px]">Primary Source</div>
+                  <div className="font-semibold text-white light:text-[#121212] mt-0.5 font-mono">{lead.source}</div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-[11px]">Current Stage</div>
-                  <div className="font-semibold text-white mt-0.5">{lead.stage}</div>
+                  <div className="text-slate-400 light:text-[#787e82] text-[11px]">Current Stage</div>
+                  <div className="font-semibold text-white light:text-[#121212] mt-0.5">{lead.stage}</div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-[11px]">Target ACV Potential</div>
-                  <div className="font-semibold text-emerald-400 font-mono mt-0.5">
+                  <div className="text-slate-400 light:text-[#787e82] text-[11px]">Target ACV Potential</div>
+                  <div className="font-semibold text-emerald-500 light:text-emerald-600 font-mono mt-0.5">
                     ${lead.dealValue.toLocaleString()}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-[11px]">Last Activity</div>
-                  <div className="font-semibold text-slate-300 mt-0.5">
+                  <div className="text-slate-400 light:text-[#787e82] text-[11px]">Last Activity</div>
+                  <div className="font-semibold text-slate-300 light:text-[#4a5053] mt-0.5">
                     {new Date(lead.lastActivityAt).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-[11px]">Created Date</div>
-                  <div className="font-semibold text-slate-300 mt-0.5">
+                  <div className="text-slate-400 light:text-[#787e82] text-[11px]">Created Date</div>
+                  <div className="font-semibold text-slate-300 light:text-[#4a5053] mt-0.5">
                     {new Date(lead.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -365,26 +402,26 @@ export function LeadDetailClient({
 
           {/* Right Sidebar: Mini Stats & Company Fit */}
           <div className="md:col-span-4 space-y-6">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-3">
+              <h4 className="text-xs font-bold text-white light:text-[#121212] uppercase tracking-wider">
                 Account Summary
               </h4>
-              <div className="text-xs space-y-2 text-slate-300">
+              <div className="text-xs space-y-2.5 text-slate-300 light:text-[#4a5053]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Company:</span>
-                  <span className="font-semibold text-white">{lead.company?.name || "N/A"}</span>
+                  <span className="text-slate-400 light:text-[#787e82]">Company:</span>
+                  <span className="font-semibold text-white light:text-[#121212]">{lead.company?.name || "N/A"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Industry:</span>
+                  <span className="text-slate-400 light:text-[#787e82]">Industry:</span>
                   <span>{lead.company?.industry || "B2B Tech"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Employee Scale:</span>
+                  <span className="text-slate-400 light:text-[#787e82]">Employee Scale:</span>
                   <span>{lead.company?.size || "250-500"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Annual Revenue:</span>
-                  <span className="font-mono text-emerald-400">
+                  <span className="text-slate-400 light:text-[#787e82]">Annual Revenue:</span>
+                  <span className="font-mono text-emerald-500 light:text-emerald-600 font-semibold">
                     {lead.company?.annualRevenue || "$35M"}
                   </span>
                 </div>
@@ -392,8 +429,8 @@ export function LeadDetailClient({
             </div>
 
             {/* Tags */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-3">
+              <h4 className="text-xs font-bold text-white light:text-[#121212] uppercase tracking-wider">
                 Assigned Tags
               </h4>
               <div className="flex flex-wrap gap-1.5">
@@ -408,43 +445,43 @@ export function LeadDetailClient({
 
       {/* TAB 2: AI INSIGHTS & EVIDENCE */}
       {activeTab === "ai" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-white/10 light:border-black/10">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-cyan-400" />
-              <h3 className="text-base font-bold text-white">AI Explainability & Evidence Report</h3>
+              <Sparkles className="h-5 w-5 text-[#38b6ff] light:text-[#0284c7]" />
+              <h3 className="text-base font-bold text-white light:text-[#121212]">AI Explainability & Evidence Report</h3>
             </div>
-            <span className="text-xs text-slate-400">
-              Confidence Score: <strong className="text-emerald-400">94%</strong>
+            <span className="text-xs text-slate-400 light:text-[#787e82]">
+              Confidence Score: <strong className="text-emerald-500 font-bold">94%</strong>
             </span>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
+            <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400 light:text-[#787e82] font-bold">
               Why is this lead important?
             </h4>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <p className="text-xs sm:text-sm text-slate-300 light:text-[#4a5053] leading-relaxed bg-[#252a2b] light:bg-[#f0f2f3] p-4 rounded-2xl border border-white/10 light:border-black/10">
               {lead.leadScore?.explanation ||
                 `${contactName} appears to be actively evaluating solutions rather than casually researching them. The strongest signals are repeated enterprise pricing visits, integration documentation activity, and engagement from multiple stakeholders at ${lead.company?.name}.`}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-xs font-semibold text-slate-300">Evidence Detected</span>
-              <p className="text-xs text-cyan-400 font-mono">
+            <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+              <span className="text-xs font-semibold text-white light:text-[#121212]">Evidence Detected</span>
+              <p className="text-xs text-[#38b6ff] light:text-[#0284c7] font-mono font-medium">
                 3 pricing visits + 2 doc views + 1 demo request
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-xs font-semibold text-slate-300">Consensus Signals</span>
-              <p className="text-xs text-indigo-400 font-mono">
+            <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+              <span className="text-xs font-semibold text-white light:text-[#121212]">Consensus Signals</span>
+              <p className="text-xs text-indigo-400 light:text-indigo-600 font-mono font-medium">
                 3 active colleagues active in last 7 days
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-              <span className="text-xs font-semibold text-slate-300">Urgency Timeline</span>
-              <p className="text-xs text-emerald-400 font-mono">
+            <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+              <span className="text-xs font-semibold text-white light:text-[#121212]">Urgency Timeline</span>
+              <p className="text-xs text-emerald-500 light:text-emerald-600 font-mono font-medium">
                 Optimal touchpoint within 2 hours
               </p>
             </div>
@@ -454,15 +491,15 @@ export function LeadDetailClient({
 
       {/* TAB 3: SCORE BREAKDOWN */}
       {activeTab === "score" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-white/10 light:border-black/10">
             <div>
-              <h3 className="text-base font-bold text-white">Mathematical Scoring Breakdown</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-base font-bold text-white light:text-[#121212]">Mathematical Scoring Breakdown</h3>
+              <p className="text-xs text-slate-400 light:text-[#787e82]">
                 Transparent factor attribution totaling current score: {lead.score} / 100
               </p>
             </div>
-            <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20">
+            <span className="text-xs font-mono font-bold text-[#38b6ff] light:text-[#0284c7] bg-[#38b6ff]/15 px-3 py-1 rounded-full border border-[#38b6ff]/30">
               +{lead.leadScore?.delta7d || 21} pts in last 7 days
             </span>
           </div>
@@ -470,7 +507,7 @@ export function LeadDetailClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Positive Factors */}
             <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase text-emerald-400 flex items-center gap-1.5 font-mono">
+              <h4 className="text-xs font-bold uppercase text-emerald-500 light:text-emerald-600 flex items-center gap-1.5 font-mono">
                 <CheckCircle2 className="h-4 w-4" /> Positive Drivers
               </h4>
               <div className="space-y-2">
@@ -483,13 +520,13 @@ export function LeadDetailClient({
                 ].map((pos, i) => (
                   <div
                     key={i}
-                    className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
+                    className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 flex items-center justify-between text-xs"
                   >
                     <div>
-                      <div className="font-semibold text-white">{pos.name}</div>
-                      <div className="text-[11px] text-slate-400">{pos.desc}</div>
+                      <div className="font-bold text-white light:text-[#121212]">{pos.name}</div>
+                      <div className="text-[11px] text-slate-400 light:text-[#787e82]">{pos.desc}</div>
                     </div>
-                    <span className="font-mono text-emerald-400 font-bold text-sm">+{pos.pts}</span>
+                    <span className="font-mono text-emerald-500 light:text-emerald-600 font-bold text-sm">+{pos.pts}</span>
                   </div>
                 ))}
               </div>
@@ -497,7 +534,7 @@ export function LeadDetailClient({
 
             {/* Negative Factors */}
             <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase text-rose-400 flex items-center gap-1.5 font-mono">
+              <h4 className="text-xs font-bold uppercase text-rose-500 light:text-rose-600 flex items-center gap-1.5 font-mono">
                 <Clock className="h-4 w-4" /> Negative / Decay Factors
               </h4>
               <div className="space-y-2">
@@ -506,13 +543,13 @@ export function LeadDetailClient({
                 ].map((neg, i) => (
                   <div
                     key={i}
-                    className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs"
+                    className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 flex items-center justify-between text-xs"
                   >
                     <div>
-                      <div className="font-semibold text-white">{neg.name}</div>
-                      <div className="text-[11px] text-slate-400">{neg.desc}</div>
+                      <div className="font-bold text-white light:text-[#121212]">{neg.name}</div>
+                      <div className="text-[11px] text-slate-400 light:text-[#787e82]">{neg.desc}</div>
                     </div>
-                    <span className="font-mono text-rose-400 font-bold text-sm">{neg.pts}</span>
+                    <span className="font-mono text-rose-500 light:text-rose-600 font-bold text-sm">{neg.pts}</span>
                   </div>
                 ))}
               </div>
@@ -523,22 +560,22 @@ export function LeadDetailClient({
 
       {/* TAB 4: ACTIVITY TIMELINE */}
       {activeTab === "timeline" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-          <h3 className="text-base font-bold text-white">Full Behavioral Activity Stream</h3>
-          <div className="space-y-4 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-slate-800">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-6">
+          <h3 className="text-base font-bold text-white light:text-[#121212]">Full Behavioral Activity Stream</h3>
+          <div className="space-y-4 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-white/10 light:before:bg-black/10">
             {lead.activities && lead.activities.length > 0 ? (
               lead.activities.map((act: any, idx: number) => (
                 <div key={idx} className="relative flex items-start gap-4 pl-8 text-xs">
-                  <div className="absolute left-1.5 top-1.5 h-3.5 w-3.5 rounded-full bg-cyan-400 border-2 border-slate-950 ring-2 ring-cyan-500/20" />
-                  <div className="flex-1 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <div className="absolute left-1.5 top-1.5 h-3.5 w-3.5 rounded-full bg-[#38b6ff] border-2 border-[#1e2224] light:border-white ring-2 ring-[#38b6ff]/20" />
+                  <div className="flex-1 p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-white">{act.title}</span>
-                      <span className="text-[10px] font-mono text-slate-500">
+                      <span className="font-bold text-white light:text-[#121212]">{act.title}</span>
+                      <span className="text-[10px] font-mono text-slate-400 light:text-[#787e82]">
                         {new Date(act.createdAt).toLocaleString()}
                       </span>
                     </div>
                     {act.description && (
-                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                      <p className="text-slate-300 light:text-[#4a5053] text-[11px] leading-relaxed">
                         {act.description}
                       </p>
                     )}
@@ -546,7 +583,7 @@ export function LeadDetailClient({
                 </div>
               ))
             ) : (
-              <p className="text-xs text-slate-500">No recorded activities yet.</p>
+              <p className="text-xs text-slate-400 light:text-[#787e82]">No recorded activities yet.</p>
             )}
           </div>
         </div>
@@ -554,27 +591,27 @@ export function LeadDetailClient({
 
       {/* TAB 5: EMAILS */}
       {activeTab === "emails" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 className="text-base font-bold text-white">Sent & Cadence Emails</h3>
-            <Button variant="gradient" size="sm" onClick={() => setComposerOpen(true)}>
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/10 light:border-black/10">
+            <h3 className="text-base font-bold text-white light:text-[#121212]">Sent & Cadence Emails</h3>
+            <Button variant="pill" size="sm" onClick={() => setComposerOpen(true)}>
               + Compose New Email
             </Button>
           </div>
 
           <div className="space-y-3 text-xs">
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-white">
+                <span className="font-bold text-white light:text-[#121212]">
                   Prioritizing revenue signals at {lead.company?.name || "your company"}
                 </span>
-                <span className="text-[10px] text-emerald-400 font-mono">Opened 3x • Clicked</span>
+                <span className="text-[10px] text-emerald-500 font-mono font-semibold">Opened 3x • Clicked</span>
               </div>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
+              <p className="text-slate-300 light:text-[#4a5053] text-[11px] leading-relaxed">
                 "Hi {lead.contact?.firstName || "there"}, noticed your team looking into customer
                 signal capture. Most engineering leaders lose 40% of high-intent buyers..."
               </p>
-              <div className="text-[10px] text-slate-500">Sent by Liam Vance • 2 days ago</div>
+              <div className="text-[10px] text-slate-400 light:text-[#787e82]">Sent by Liam Vance • 2 days ago</div>
             </div>
           </div>
         </div>
@@ -582,9 +619,9 @@ export function LeadDetailClient({
 
       {/* TAB 6: NOTES */}
       {activeTab === "notes" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 className="text-base font-bold text-white">Rep Notes & Collaboration</h3>
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/10 light:border-black/10">
+            <h3 className="text-base font-bold text-white light:text-[#121212]">Rep Notes & Collaboration</h3>
             <Button variant="outline" size="sm" onClick={() => setNoteModalOpen(true)}>
               + Add Note
             </Button>
@@ -594,16 +631,16 @@ export function LeadDetailClient({
             {lead.activities
               .filter((a: any) => a.type === "NOTE")
               .map((note: any, i: number) => (
-                <div key={i} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="flex justify-between items-center text-slate-400 text-[10px]">
-                    <span className="font-semibold text-slate-300">Sales Note</span>
+                <div key={i} className="p-4 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 space-y-1">
+                  <div className="flex justify-between items-center text-slate-400 light:text-[#787e82] text-[10px]">
+                    <span className="font-semibold text-white light:text-[#121212]">Sales Note</span>
                     <span>{new Date(note.createdAt).toLocaleString()}</span>
                   </div>
-                  <p className="text-slate-200 text-xs leading-relaxed">{note.description}</p>
+                  <p className="text-slate-300 light:text-[#4a5053] text-xs leading-relaxed">{note.description}</p>
                 </div>
               ))}
             {lead.activities.filter((a: any) => a.type === "NOTE").length === 0 && (
-              <p className="text-xs text-slate-500 py-4 text-center">No notes added yet.</p>
+              <p className="text-xs text-slate-400 light:text-[#787e82] py-4 text-center">No notes added yet.</p>
             )}
           </div>
         </div>
@@ -611,11 +648,11 @@ export function LeadDetailClient({
 
       {/* TAB 7: COMPANY PROFILE */}
       {activeTab === "company" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-white/10 light:border-black/10">
             <div>
-              <h3 className="text-base font-bold text-white">{lead.company?.name}</h3>
-              <p className="text-xs text-slate-400">{lead.company?.domain}</p>
+              <h3 className="text-base font-bold text-white light:text-[#121212]">{lead.company?.name}</h3>
+              <p className="text-xs text-slate-400 light:text-[#787e82]">{lead.company?.domain}</p>
             </div>
             <Link href={lead.company ? `/app/companies/${lead.company.id}` : "#"}>
               <Button variant="outline" size="sm" className="text-xs">
@@ -625,36 +662,36 @@ export function LeadDetailClient({
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div className="text-slate-500 text-[11px]">Industry</div>
-              <div className="font-semibold text-white mt-0.5">{lead.company?.industry}</div>
+            <div className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
+              <div className="text-slate-400 light:text-[#787e82] text-[11px]">Industry</div>
+              <div className="font-bold text-white light:text-[#121212] mt-0.5">{lead.company?.industry}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div className="text-slate-500 text-[11px]">Headquarters</div>
-              <div className="font-semibold text-white mt-0.5">{lead.company?.location}</div>
+            <div className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
+              <div className="text-slate-400 light:text-[#787e82] text-[11px]">Headquarters</div>
+              <div className="font-bold text-white light:text-[#121212] mt-0.5">{lead.company?.location}</div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div className="text-slate-500 text-[11px]">Annual Revenue</div>
-              <div className="font-semibold text-emerald-400 font-mono mt-0.5">
+            <div className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
+              <div className="text-slate-400 light:text-[#787e82] text-[11px]">Annual Revenue</div>
+              <div className="font-bold text-emerald-500 light:text-emerald-600 font-mono mt-0.5">
                 {lead.company?.annualRevenue}
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div className="text-slate-500 text-[11px]">Company Intent Score</div>
-              <div className="font-semibold text-cyan-400 font-mono mt-0.5">
+            <div className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
+              <div className="text-slate-400 light:text-[#787e82] text-[11px]">Company Intent Score</div>
+              <div className="font-bold text-[#38b6ff] light:text-[#0284c7] font-mono mt-0.5">
                 {lead.company?.intentScore} / 100
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-semibold text-slate-300">Detected Tech Stack:</span>
+            <span className="text-xs font-bold text-white light:text-[#121212]">Detected Tech Stack:</span>
             <div className="flex flex-wrap gap-2">
               {(lead.company?.techStack || ["Next.js", "Kubernetes", "PostgreSQL", "Go"]).map(
                 (t: string) => (
                   <span
                     key={t}
-                    className="px-2.5 py-1 rounded bg-slate-800 text-xs font-mono text-cyan-300 border border-slate-700"
+                    className="px-3 py-1 rounded-full bg-[#252a2b] light:bg-[#f0f2f3] text-xs font-mono font-medium text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10"
                   >
                     {t}
                   </span>
@@ -667,18 +704,18 @@ export function LeadDetailClient({
 
       {/* TAB 8: RELATED CONTACTS */}
       {activeTab === "contacts" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <h3 className="text-base font-bold text-white">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-4">
+          <h3 className="text-base font-bold text-white light:text-[#121212]">
             Stakeholders at {lead.company?.name || "Company"}
           </h3>
-          <div className="divide-y divide-slate-800 text-xs">
+          <div className="divide-y divide-white/10 light:divide-black/10 text-xs">
             {(lead.company?.contacts || [lead.contact]).map((c: any) => (
               <div key={c.id} className="py-3 flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-white">
+                  <div className="font-bold text-white light:text-[#121212]">
                     {c.firstName} {c.lastName}
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px] text-slate-400 light:text-[#787e82]">
                     {c.title} • <span className="font-mono">{c.email}</span>
                   </div>
                 </div>
@@ -698,36 +735,36 @@ export function LeadDetailClient({
 
       {/* TAB 9: SCORE HISTORY LOG */}
       {activeTab === "history" && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <h3 className="text-base font-bold text-white">Score Event Log</h3>
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-4">
+          <h3 className="text-base font-bold text-white light:text-[#121212]">Score Event Log</h3>
           <div className="space-y-2 text-xs">
             {lead.scoreEvents && lead.scoreEvents.length > 0 ? (
               lead.scoreEvents.map((ev: any, idx: number) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between"
+                  className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 flex items-center justify-between"
                 >
                   <div>
-                    <div className="font-semibold text-white">{ev.factorName}</div>
-                    <div className="text-[11px] text-slate-400">{ev.reason}</div>
+                    <div className="font-bold text-white light:text-[#121212]">{ev.factorName}</div>
+                    <div className="text-[11px] text-slate-400 light:text-[#787e82]">{ev.reason}</div>
                   </div>
                   <div className="text-right font-mono">
-                    <span className="text-emerald-400 font-bold">+{ev.delta} pts</span>
-                    <div className="text-[10px] text-slate-500">New Score: {ev.newScore}</div>
+                    <span className="text-emerald-500 light:text-emerald-600 font-bold">+{ev.delta} pts</span>
+                    <div className="text-[10px] text-slate-400 light:text-[#787e82]">New Score: {ev.newScore}</div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-white">Intent Signals Calculation</div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="font-bold text-white light:text-[#121212]">Intent Signals Calculation</div>
+                  <div className="text-[11px] text-slate-400 light:text-[#787e82]">
                     Pricing page views and multi-stakeholder surge
                   </div>
                 </div>
                 <div className="text-right font-mono">
-                  <span className="text-emerald-400 font-bold">+21 pts</span>
-                  <div className="text-[10px] text-slate-500">New Score: {lead.score}</div>
+                  <span className="text-emerald-500 light:text-emerald-600 font-bold">+21 pts</span>
+                  <div className="text-[10px] text-slate-400 light:text-[#787e82]">New Score: {lead.score}</div>
                 </div>
               </div>
             )}
@@ -762,13 +799,13 @@ export function LeadDetailClient({
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Type your notes about stakeholder feedback, objections, or timeline..."
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+            className="w-full rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-3.5 text-white light:text-[#121212] placeholder-slate-400 light:placeholder-[#787e82] focus:border-[#38b6ff] focus:outline-none"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setNoteModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="gradient" size="sm" onClick={handleSaveNote}>
+            <Button variant="pill" size="sm" onClick={handleSaveNote}>
               Save Note
             </Button>
           </div>
@@ -784,11 +821,11 @@ export function LeadDetailClient({
       >
         <div className="space-y-4 text-xs">
           <div className="space-y-1.5">
-            <label className="block text-slate-300">Call Outcome</label>
+            <label className="block text-white light:text-[#121212] font-semibold">Call Outcome</label>
             <select
               value={callOutcome}
               onChange={(e) => setCallOutcome(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-slate-100"
+              className="w-full rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-3 text-white light:text-[#121212]"
             >
               <option value="Connected - Positive">Connected — Positive Interest</option>
               <option value="Meeting Scheduled">Meeting Scheduled</option>
@@ -800,7 +837,7 @@ export function LeadDetailClient({
             <Button variant="ghost" size="sm" onClick={() => setCallModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="gradient" size="sm" onClick={handleLogCall}>
+            <Button variant="pill" size="sm" onClick={handleLogCall}>
               Log Call
             </Button>
           </div>
@@ -816,11 +853,11 @@ export function LeadDetailClient({
       >
         <div className="space-y-4 text-xs">
           <div className="space-y-1.5">
-            <label className="block text-slate-300">Select Sales Rep</label>
+            <label className="block text-white light:text-[#121212] font-semibold">Select Sales Rep</label>
             <select
               value={selectedOwner}
               onChange={(e) => setSelectedOwner(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-slate-100"
+              className="w-full rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-3 text-white light:text-[#121212]"
             >
               <option value="">Unassigned</option>
               {teamMembers.map((m) => (
@@ -834,7 +871,7 @@ export function LeadDetailClient({
             <Button variant="ghost" size="sm" onClick={() => setAssignModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="gradient" size="sm" onClick={handleAssignOwner}>
+            <Button variant="pill" size="sm" onClick={handleAssignOwner}>
               Save Assignment
             </Button>
           </div>
@@ -850,11 +887,11 @@ export function LeadDetailClient({
       >
         <div className="space-y-4 text-xs">
           <div className="space-y-1.5">
-            <label className="block text-slate-300">Select Cadence</label>
+            <label className="block text-white light:text-[#121212] font-semibold">Select Cadence</label>
             <select
               value={selectedSeq}
               onChange={(e) => setSelectedSeq(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-slate-100"
+              className="w-full rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-3 text-white light:text-[#121212]"
             >
               {availableSequences.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -863,7 +900,7 @@ export function LeadDetailClient({
               ))}
             </select>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-slate-400 light:text-[#787e82]">
             Enrolling will schedule Day 0 outreach and automatically pause on prospect reply.
           </p>
           <div className="flex justify-end gap-2">
@@ -871,7 +908,7 @@ export function LeadDetailClient({
               Cancel
             </Button>
             <Button
-              variant="gradient"
+              variant="pill"
               size="sm"
               onClick={() => {
                 setSeqModalOpen(false);

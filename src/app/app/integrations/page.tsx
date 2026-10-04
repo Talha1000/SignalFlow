@@ -1,7 +1,10 @@
 'use client';
 
+import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Share2 } from 'lucide-react';
 
 const integrations = [
   { name: 'Salesforce', category: 'CRM', status: 'available', icon: '☁️', description: 'Sync leads, contacts, and deals bidirectionally.' },
@@ -17,42 +20,47 @@ const integrations = [
 
 export default function IntegrationsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Integrations</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Connect SignalFlow with your favorite tools and services.
+        <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+          <Share2 className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
+          Integrations Hub
+        </h1>
+        <p className="text-xs text-slate-300 light:text-[#4a5053] mt-0.5">
+          Connect SignalFlow with your CRM, notification channels, and automation stack.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {integrations.map((integration) => (
-          <Card key={integration.name} className="p-5 flex flex-col justify-between">
+          <Card key={integration.name} className="p-6 flex flex-col justify-between shadow-sm">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{integration.icon}</span>
+                  <div className="w-10 h-10 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 flex items-center justify-center text-xl shrink-0">
+                    {integration.icon}
+                  </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{integration.name}</h3>
-                    <span className="text-xs text-gray-400">{integration.category}</span>
+                    <h3 className="font-bold text-white light:text-[#121212] text-sm">{integration.name}</h3>
+                    <span className="text-[11px] text-slate-400 light:text-[#787e82]">{integration.category}</span>
                   </div>
                 </div>
-                {integration.status === 'coming_soon' && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                    Coming Soon
-                  </span>
+                {integration.status === 'coming_soon' ? (
+                  <Badge variant="outline" className="text-[10px]">Coming Soon</Badge>
+                ) : (
+                  <Badge variant="cyan" className="text-[10px]">Connected</Badge>
                 )}
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{integration.description}</p>
+              <p className="text-xs text-slate-300 light:text-[#4a5053] leading-relaxed">{integration.description}</p>
             </div>
-            <div className="mt-4">
+            <div className="mt-6 pt-4 border-t border-white/10 light:border-black/10">
               <Button
-                variant={integration.status === 'coming_soon' ? 'ghost' : 'secondary'}
+                variant={integration.status === 'coming_soon' ? 'outline' : 'pill'}
                 size="sm"
-                className="w-full"
+                className="w-full justify-center"
                 disabled={integration.status === 'coming_soon'}
               >
-                {integration.status === 'coming_soon' ? 'Notify Me' : 'Connect'}
+                {integration.status === 'coming_soon' ? 'Notify Me' : 'Configure Sync'}
               </Button>
             </div>
           </Card>

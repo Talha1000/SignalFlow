@@ -4,17 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   Trello,
-  Plus,
   ArrowRight,
   ArrowLeft,
-  DollarSign,
-  TrendingUp,
-  Target,
-  ChevronRight,
-  Flame,
 } from "lucide-react";
 import { IntentBadge, ScoreBadge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 
 interface PipelineLead {
   id: string;
@@ -71,13 +64,13 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
     <div className="space-y-6 max-w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Trello className="h-6 w-6 text-cyan-400" />
+          <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+            <Trello className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
             Visual Sales Pipeline
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-300 light:text-[#4a5053] mt-0.5">
             Total active pipeline value:{" "}
-            <span className="text-emerald-400 font-mono font-bold">
+            <span className="text-emerald-500 light:text-emerald-600 font-mono font-bold">
               ${totalValue.toLocaleString()}
             </span>{" "}
             across {leads.length} accounts.
@@ -94,18 +87,18 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
           return (
             <div
               key={col.key}
-              className="w-80 shrink-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-3 space-y-3"
+              className="w-80 shrink-0 flex flex-col rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-3.5 space-y-3 shadow-sm"
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10">
                 <div>
-                  <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-white light:text-[#121212] flex items-center gap-1.5">
                     {col.label}
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#1e2224] light:bg-[#ffffff] text-slate-300 light:text-[#4a5053] border border-white/10 light:border-black/10">
                       {colLeads.length}
                     </span>
                   </h3>
-                  <div className="text-[11px] font-mono text-emerald-400 font-semibold mt-0.5">
+                  <div className="text-[11px] font-mono text-emerald-500 light:text-emerald-600 font-bold mt-0.5">
                     ${colValue.toLocaleString()}
                   </div>
                 </div>
@@ -114,32 +107,32 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
               {/* Column Cards */}
               <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
                 {colLeads.length === 0 ? (
-                  <div className="py-8 text-center text-[11px] text-slate-600 border border-dashed border-slate-800/80 rounded-xl">
+                  <div className="py-8 text-center text-[11px] text-slate-400 light:text-[#787e82] border border-dashed border-white/10 light:border-black/10 rounded-2xl">
                     No deals in {col.label}
                   </div>
                 ) : (
                   colLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 space-y-2.5 hover:border-cyan-500/40 transition-all shadow-sm"
+                      className="rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f8fafc] p-3.5 space-y-2.5 hover:border-[#38b6ff]/40 transition-all shadow-sm"
                     >
                       <div className="flex items-start justify-between">
                         <div>
                           <Link
                             href={`/app/leads/${lead.id}`}
-                            className="font-bold text-xs text-white hover:text-cyan-400 transition-colors"
+                            className="font-bold text-xs text-white light:text-[#121212] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"
                           >
                             {lead.company?.name || "Direct Lead"}
                           </Link>
-                          <div className="text-[11px] text-slate-400">
+                          <div className="text-[11px] text-slate-400 light:text-[#787e82]">
                             {lead.contact?.firstName} {lead.contact?.lastName}
                           </div>
                         </div>
                         <ScoreBadge score={lead.score} />
                       </div>
 
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
-                        <span className="font-mono text-emerald-400 font-semibold">
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-white/10 light:border-black/10">
+                        <span className="font-mono text-emerald-500 light:text-emerald-600 font-bold">
                           ${lead.dealValue.toLocaleString()}
                         </span>
                         <IntentBadge level={lead.intentLevel} />
@@ -150,21 +143,21 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
                         <button
                           onClick={() => moveStage(lead.id, lead.stage, -1)}
                           disabled={col.key === "NEW"}
-                          className="p-1 rounded text-slate-500 hover:text-white disabled:opacity-20"
+                          className="p-1 rounded text-slate-400 light:text-[#787e82] hover:text-white light:hover:text-[#121212] disabled:opacity-20"
                           title="Move stage back"
                         >
                           <ArrowLeft className="h-3 w-3" />
                         </button>
                         <Link
                           href={`/app/leads/${lead.id}`}
-                          className="text-slate-400 hover:text-cyan-400 text-[10px]"
+                          className="text-slate-400 light:text-[#787e82] hover:text-[#38b6ff] light:hover:text-[#0284c7] text-[10px] font-medium"
                         >
                           Details →
                         </Link>
                         <button
                           onClick={() => moveStage(lead.id, lead.stage, 1)}
                           disabled={col.key === "LOST"}
-                          className="p-1 rounded text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-20"
+                          className="p-1 rounded text-[#38b6ff] light:text-[#0284c7] hover:bg-[#38b6ff]/10 disabled:opacity-20"
                           title="Advance stage"
                         >
                           <ArrowRight className="h-3 w-3" />

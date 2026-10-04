@@ -4,11 +4,6 @@ import React, { useState } from "react";
 import {
   BarChart3,
   TrendingUp,
-  DollarSign,
-  Users,
-  Target,
-  Zap,
-  Filter,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -40,9 +35,9 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
 
   // 1. Score Distribution Data
   const scoreBuckets = [
-    { range: "0-29 (Cold)", count: leads.filter((l) => l.score < 30).length, fill: "#475569" },
+    { range: "0-29 (Cold)", count: leads.filter((l) => l.score < 30).length, fill: "#64748b" },
     { range: "30-49 (Low)", count: leads.filter((l) => l.score >= 30 && l.score < 50).length, fill: "#0284c7" },
-    { range: "50-69 (Warm)", count: leads.filter((l) => l.score >= 50 && l.score < 70).length, fill: "#06b6d4" },
+    { range: "50-69 (Warm)", count: leads.filter((l) => l.score >= 50 && l.score < 70).length, fill: "#38b6ff" },
     { range: "70-84 (High)", count: leads.filter((l) => l.score >= 70 && l.score < 85).length, fill: "#f59e0b" },
     { range: "85-100 (Hot)", count: leads.filter((l) => l.score >= 85).length, fill: "#ef4444" },
   ];
@@ -68,7 +63,7 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
 
   // 4. Source Attribution
   const sourceData = [
-    { name: "Website Inbound", value: 45, color: "#06b6d4" },
+    { name: "Website Inbound", value: 45, color: "#38b6ff" },
     { name: "Campaigns", value: 25, color: "#6366f1" },
     { name: "Developer Docs", value: 20, color: "#10b981" },
     { name: "Referrals", value: 10, color: "#f59e0b" },
@@ -82,11 +77,11 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-cyan-400" />
+          <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
             Executive Revenue Analytics
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-300 light:text-[#4a5053] mt-0.5">
             Real-time conversion velocity, score distribution, and lead source ROI.
           </p>
         </div>
@@ -95,7 +90,7 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
           <select
             value={timeframe}
             onChange={(e) => setTimeframe(e.target.value)}
-            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+            className="rounded-full border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] px-3.5 py-1.5 text-xs text-white light:text-[#121212] focus:outline-none focus:border-[#38b6ff]"
           >
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
@@ -107,51 +102,51 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
 
       {/* Top 4 Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-1">
-          <span className="text-xs text-slate-400">Total Influenced Pipeline</span>
-          <div className="text-2xl font-extrabold font-mono text-emerald-400">
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 shadow-sm space-y-1">
+          <span className="text-xs text-slate-400 light:text-[#787e82]">Total Influenced Pipeline</span>
+          <div className="text-2xl font-extrabold font-mono text-emerald-500 light:text-emerald-600">
             ${(totalValue / 1000).toFixed(0)}K
           </div>
-          <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+          <p className="text-[10px] text-emerald-500 light:text-emerald-600 flex items-center gap-1 font-semibold">
             <TrendingUp className="h-3 w-3" /> +28% vs previous period
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-1">
-          <span className="text-xs text-slate-400">Average Lead Score</span>
-          <div className="text-2xl font-extrabold font-mono text-cyan-400">{avgScore} / 100</div>
-          <p className="text-[10px] text-cyan-400">High-intent buying skew</p>
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 shadow-sm space-y-1">
+          <span className="text-xs text-slate-400 light:text-[#787e82]">Average Lead Score</span>
+          <div className="text-2xl font-extrabold font-mono text-[#38b6ff] light:text-[#0284c7]">{avgScore} / 100</div>
+          <p className="text-[10px] text-[#38b6ff] light:text-[#0284c7] font-semibold">High-intent buying skew</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-1">
-          <span className="text-xs text-slate-400">Lead-to-Meeting Rate</span>
-          <div className="text-2xl font-extrabold font-mono text-indigo-400">34.8%</div>
-          <p className="text-[10px] text-indigo-400">Industry benchmark: 12%</p>
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 shadow-sm space-y-1">
+          <span className="text-xs text-slate-400 light:text-[#787e82]">Lead-to-Meeting Rate</span>
+          <div className="text-2xl font-extrabold font-mono text-indigo-400 light:text-indigo-600">34.8%</div>
+          <p className="text-[10px] text-indigo-400 light:text-indigo-600 font-semibold">Industry benchmark: 12%</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-1">
-          <span className="text-xs text-slate-400">Median Time-to-Contact</span>
-          <div className="text-2xl font-extrabold font-mono text-amber-400">42m</div>
-          <p className="text-[10px] text-amber-400">3.4x faster with Priority Queue</p>
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 shadow-sm space-y-1">
+          <span className="text-xs text-slate-400 light:text-[#787e82]">Median Time-to-Contact</span>
+          <div className="text-2xl font-extrabold font-mono text-amber-500 light:text-amber-600">42m</div>
+          <p className="text-[10px] text-amber-500 light:text-amber-600 font-semibold">3.4x faster with Priority Queue</p>
         </div>
       </div>
 
       {/* Chart Rows */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Score Distribution Histogram */}
-        <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+        <div className="lg:col-span-6 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Lead Intent Distribution</h3>
-            <span className="text-[11px] font-mono text-slate-400">{leads.length} Leads Analyzed</span>
+            <h3 className="text-sm font-bold text-white light:text-[#121212]">Lead Intent Distribution</h3>
+            <span className="text-[11px] font-mono text-slate-400 light:text-[#787e82]">{leads.length} Leads Analyzed</span>
           </div>
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={scoreBuckets}>
-                <XAxis dataKey="range" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} />
+                <XAxis dataKey="range" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#090d16", borderColor: "#1e293b", fontSize: "12px" }}
+                  contentStyle={{ backgroundColor: "#1e2224", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff", fontSize: "12px" }}
                 />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {scoreBuckets.map((entry, index) => (
@@ -164,10 +159,10 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
         </div>
 
         {/* Pipeline Velocity Growth */}
-        <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+        <div className="lg:col-span-6 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Influenced Pipeline Growth ($K)</h3>
-            <span className="text-[11px] font-mono text-emerald-400 font-bold">+250% Velocity</span>
+            <h3 className="text-sm font-bold text-white light:text-[#121212]">Influenced Pipeline Growth ($K)</h3>
+            <span className="text-[11px] font-mono text-emerald-500 light:text-emerald-600 font-bold">+250% Velocity</span>
           </div>
 
           <div className="h-64 w-full">
@@ -175,19 +170,19 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
               <AreaChart data={velocityData}>
                 <defs>
                   <linearGradient id="colorPipe" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#38b6ff" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#38b6ff" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#090d16", borderColor: "#1e293b", fontSize: "12px" }}
+                  contentStyle={{ backgroundColor: "#1e2224", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff", fontSize: "12px" }}
                 />
                 <Area
                   type="monotone"
                   dataKey="pipeline"
-                  stroke="#06b6d4"
+                  stroke="#38b6ff"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorPipe)"
@@ -201,22 +196,22 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
       {/* Funnel & Attribution */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Conversion Funnel */}
-        <div className="lg:col-span-7 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-          <h3 className="text-sm font-bold text-white">Lead-to-Revenue Conversion Funnel</h3>
+        <div className="lg:col-span-7 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-white light:text-[#121212]">Lead-to-Revenue Conversion Funnel</h3>
           <div className="space-y-3 pt-2">
             {funnelData.map((f, i) => {
               const pct = Math.round((f.count / (leads.length || 1)) * 100);
               return (
                 <div key={i} className="space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-300">
-                    <span className="font-medium">{f.stage}</span>
-                    <span className="font-mono text-slate-400">
+                  <div className="flex justify-between text-slate-300 light:text-[#4a5053]">
+                    <span className="font-semibold text-white light:text-[#121212]">{f.stage}</span>
+                    <span className="font-mono text-slate-400 light:text-[#787e82]">
                       {f.count} leads ({pct}%)
                     </span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-950 overflow-hidden">
+                  <div className="h-2.5 w-full rounded-full bg-[#252a2b] light:bg-[#f0f2f3] overflow-hidden border border-white/5 light:border-black/5">
                     <div
-                      className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full"
+                      className="h-full bg-gradient-to-r from-[#38b6ff] to-indigo-500 rounded-full"
                       style={{ width: `${Math.max(8, pct)}%` }}
                     />
                   </div>
@@ -227,8 +222,8 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
         </div>
 
         {/* Lead Source Breakdown */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-          <h3 className="text-sm font-bold text-white">Source Attribution</h3>
+        <div className="lg:col-span-5 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-white light:text-[#121212]">Source Attribution</h3>
           <div className="h-48 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -246,7 +241,7 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#090d16", borderColor: "#1e293b", fontSize: "12px" }}
+                  contentStyle={{ backgroundColor: "#1e2224", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px", color: "#fff", fontSize: "12px" }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -255,8 +250,8 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
             {sourceData.map((s) => (
               <div key={s.name} className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                <span className="text-slate-300">{s.name}</span>
-                <span className="ml-auto font-mono text-slate-400">{s.value}%</span>
+                <span className="text-slate-300 light:text-[#4a5053] font-medium">{s.name}</span>
+                <span className="ml-auto font-mono text-slate-400 light:text-[#787e82]">{s.value}%</span>
               </div>
             ))}
           </div>

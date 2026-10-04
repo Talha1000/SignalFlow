@@ -48,7 +48,7 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/70 light:bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
@@ -56,16 +56,16 @@ export function Modal({
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${widthStyles[maxWidth]} rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 text-slate-100 z-10 overflow-hidden max-h-[90vh] flex flex-col`}
+        className={`relative w-full ${widthStyles[maxWidth]} rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-2xl p-6 text-white light:text-[#121212] z-10 overflow-hidden max-h-[90vh] flex flex-col`}
       >
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-white/10 light:border-black/10">
           <div>
-            {title && <h3 className="text-lg font-semibold text-white">{title}</h3>}
-            {description && <p className="text-xs text-slate-400 mt-0.5">{description}</p>}
+            {title && <h3 className="text-lg font-bold text-white light:text-[#121212]">{title}</h3>}
+            {description && <p className="text-xs text-slate-400 light:text-[#787e82] mt-0.5">{description}</p>}
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="rounded-full p-1.5 text-slate-400 light:text-[#787e82] hover:bg-[#252a2b] light:hover:bg-[#f0f2f3] hover:text-white light:hover:text-[#121212] transition-colors"
           >
             <X className="h-5 w-5" />
           </button>

@@ -100,13 +100,13 @@ export default function FeaturesPage() {
   return (
     <div className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-0.5 text-xs font-medium text-cyan-400">
-          <Sparkles className="h-3 w-3" /> Comprehensive Feature Tour
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-[#38b6ff]/30 bg-[#38b6ff]/10 px-3.5 py-1 text-xs font-semibold text-[#38b6ff] light:text-[#0284c7]">
+          <Sparkles className="h-3.5 w-3.5" /> Comprehensive Feature Tour
         </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white light:text-[#121212]">
           Everything your sales team needs to prioritize and close
         </h1>
-        <p className="text-sm sm:text-base text-slate-400">
+        <p className="text-sm sm:text-base text-slate-300 light:text-[#4a5053]">
           From behavioral signal capture to explainable scoring and automated cadences.
         </p>
       </div>
@@ -118,45 +118,45 @@ export default function FeaturesPage() {
           return (
             <div
               key={feat.title}
-              className={`rounded-2xl border border-slate-800 bg-slate-900/60 p-8 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${
+              className={`rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] shadow-sm p-8 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${
                 !isEven ? "lg:flex-row-reverse" : ""
               }`}
             >
               <div className="lg:col-span-7 space-y-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10">
                   <Icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
+                  <span className="text-xs font-mono font-medium text-[#38b6ff] light:text-[#0284c7] uppercase tracking-wider">
                     {feat.subtitle}
                   </span>
-                  <h3 className="text-2xl font-bold text-white mt-1">{feat.title}</h3>
+                  <h3 className="text-2xl font-bold text-white light:text-[#121212] mt-1">{feat.title}</h3>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-300 light:text-[#4a5053] leading-relaxed">
                   {feat.description}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
                   {feat.bullets.map((b, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
-                      <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <div key={i} className="flex items-center gap-2 text-xs text-slate-300 light:text-[#4a5053]">
+                      <CheckCircle2 className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7] shrink-0" />
                       <span>{b}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="lg:col-span-5 rounded-xl border border-slate-800 bg-slate-950 p-6 space-y-3 font-mono text-xs text-slate-400">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-[11px] text-slate-500">
+              <div className="lg:col-span-5 rounded-2xl border border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3] p-6 space-y-3 font-mono text-xs text-slate-400 light:text-[#787e82]">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10 light:border-black/10 text-[11px] text-slate-400 light:text-[#787e82]">
                   <span>signalflow://features/{feat.title.toLowerCase().replace(/\s+/g, "-")}</span>
-                  <span className="text-emerald-400">● LIVE</span>
+                  <span className="text-emerald-500 font-semibold">● LIVE</span>
                 </div>
-                <p className="text-slate-300 text-xs font-sans leading-relaxed">
+                <p className="text-slate-300 light:text-[#4a5053] text-xs font-sans leading-relaxed">
                   Engineered with strict tenant isolation, PostgreSQL indexing, and zero black-box
                   fabrication.
                 </p>
                 <div className="pt-2 flex items-center justify-between">
-                  <span className="text-slate-500">Benchmark Latency</span>
-                  <span className="text-cyan-400 font-bold">&lt; 40ms</span>
+                  <span className="text-slate-400 light:text-[#787e82]">Benchmark Latency</span>
+                  <span className="text-[#38b6ff] light:text-[#0284c7] font-bold">&lt; 40ms</span>
                 </div>
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function FeaturesPage() {
 
       <div className="text-center pt-8">
         <Link href="/signup">
-          <Button variant="gradient" size="lg" className="px-8">
+          <Button variant="pill" size="lg" className="px-8 shadow-md">
             Experience SignalFlow Live <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </Link>
