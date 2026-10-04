@@ -30,7 +30,7 @@ export async function GET() {
 
   const healthData = {
     status: isOperational ? "operational" : "degraded",
-    version: "1.1.0",
+    version: "1.2.0",
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -38,7 +38,7 @@ export async function GET() {
     subsystems: {
       api: { status: "operational", latencyMs: Date.now() - startTime },
       database: { status: dbStatus, latencyMs: dbLatencyMs },
-      scoringEngine: { status: "operational", algorithmVersion: "v1.1-deterministic" },
+      scoringEngine: { status: "operational", algorithmVersion: "v1.2-deterministic" },
       automationsEngine: { status: "operational" },
     },
     systemMetrics: {
