@@ -47,7 +47,10 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   },
 };
 
-export async function checkPlanQuota(workspaceId: string, feature: "leads" | "aiCredits" | "emails" | "teamMembers") {
+export async function checkPlanQuota(
+  workspaceId: string,
+  feature: "leads" | "aiCredits" | "emails" | "teamMembers" | "automations"
+) {
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     include: { usage: true },
@@ -58,32 +61,48 @@ export async function checkPlanQuota(workspaceId: string, feature: "leads" | "ai
   const limits = PLAN_LIMITS[workspace.plan];
   const usage = workspace.usage;
 
-  if (!usage) return { allowed: true, current: 0, limit: 100 };
-
   switch (feature) {
-    case "leads":
+    case "automations": {
+      const currentAutomations = await prisma.automation.count({
+        where: { workspaceId, status: "ACTIVE" },
+      });
       return {
-        allowed: usage.leadsCount < limits.leads,
-        current: usage.leadsCount,
+        allowed: currentAutomations < limits.automations,
+        current: currentAutomations,
+        limit: limits.automations,
+      };
+    }
+    case "leads": {
+      const current = usage ? usage.leadsCount : 0;
+      return {
+        allowed: current < limits.leads,
+        current,
         limit: limits.leads,
       };
-    case "aiCredits":
+    }
+    case "aiCredits": {
+      const current = usage ? usage.aiCreditsUsed : 0;
       return {
-        allowed: usage.aiCreditsUsed < limits.aiCredits,
-        current: usage.aiCreditsUsed,
+        allowed: current < limits.aiCredits,
+        current,
         limit: limits.aiCredits,
       };
-    case "emails":
+    }
+    case "emails": {
+      const current = usage ? usage.emailsSentCount : 0;
       return {
-        allowed: usage.emailsSentCount < limits.emailsPerMonth,
-        current: usage.emailsSentCount,
+        allowed: current < limits.emailsPerMonth,
+        current,
         limit: limits.emailsPerMonth,
       };
-    case "teamMembers":
+    }
+    case "teamMembers": {
+      const current = usage ? usage.teamMembersCount : 1;
       return {
-        allowed: usage.teamMembersCount < limits.teamMembers,
-        current: usage.teamMembersCount,
+        allowed: current < limits.teamMembers,
+        current,
         limit: limits.teamMembers,
       };
+    }
   }
 }

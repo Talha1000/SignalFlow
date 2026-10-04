@@ -3,6 +3,7 @@ import { ActivityType, LeadStage, Prisma } from "@prisma/client";
 
 export interface AutomationTriggerContext {
   workspaceId: string;
+  automationId?: string;
   leadId?: string;
   triggerType: "SCORE_THRESHOLD" | "LEAD_CREATED" | "SIGNAL_RECEIVED" | "STAGE_CHANGE";
   currentScore?: number;
@@ -95,11 +96,16 @@ export async function executeWorkspaceAutomations(
   const outcomes: AutomationExecutionOutcome[] = [];
 
   try {
+    const whereClause: Prisma.AutomationWhereInput = {
+      workspaceId: context.workspaceId,
+      status: "ACTIVE",
+    };
+    if (context.automationId) {
+      whereClause.id = context.automationId;
+    }
+
     const automations = await prisma.automation.findMany({
-      where: {
-        workspaceId: context.workspaceId,
-        status: "ACTIVE",
-      },
+      where: whereClause,
     });
 
     for (const auto of automations) {

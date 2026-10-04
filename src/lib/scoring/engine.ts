@@ -36,8 +36,6 @@ export interface ScoreResult {
   explanation: string;
   /** Heuristic signal coverage ratio measuring corroborating evidence (0.0 to 1.0) */
   evidenceStrength: number;
-  /** Backward-compatible alias for database column LeadScore.confidence */
-  confidence: number;
 }
 
 export function calculateLeadScore(input: ScoringInput): ScoreResult {
@@ -164,6 +162,12 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
         break;
       case ActivityType.EMAIL_REPLY:
         emailReplies++;
+        break;
+      case ActivityType.GITHUB_STAR:
+        githubStars++;
+        break;
+      case ActivityType.EXECUTIVE_HIRE:
+        executiveHires++;
         break;
       default:
         break;
@@ -333,6 +337,5 @@ export function calculateLeadScore(input: ScoringInput): ScoreResult {
     scoreChange7d,
     explanation,
     evidenceStrength,
-    confidence: evidenceStrength,
   };
 }

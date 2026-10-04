@@ -44,12 +44,16 @@ export class AIService {
   /**
    * Generates a plain-language executive qualification summary explaining why the lead matters.
    */
-  async generateQualificationSummary(lead: LeadContext): Promise<{ summary: string; confidence: number }> {
+  async generateQualificationSummary(lead: LeadContext): Promise<{ summary: string; evidenceStrength: number }> {
     const sanitizedFirst = sanitizeForPrompt(lead.firstName);
     const sanitizedLast = sanitizeForPrompt(lead.lastName);
     const sanitizedTitle = sanitizeForPrompt(lead.title || "Decision Maker");
     const sanitizedCompany = sanitizeForPrompt(lead.companyName);
     const sanitizedIndustry = sanitizeForPrompt(lead.industry || "B2B Tech");
+
+    const factorCoverage = Number(
+      Math.min(0.95, Math.max(0.60, 0.65 + lead.activities.length * 0.05)).toFixed(2)
+    );
 
     if (this.geminiClient) {
       try {
@@ -68,7 +72,7 @@ Respond strictly in plain text. Ground your analysis strictly in the provided ac
 
         const res = await model.generateContent(prompt);
         const text = res.response.text().trim();
-        if (text) return { summary: text, confidence: 0.95 };
+        if (text) return { summary: text, evidenceStrength: factorCoverage };
       } catch (err) {
         console.warn("Gemini API call failed, falling back to heuristic engine:", err);
       }
@@ -90,7 +94,7 @@ Respond strictly in plain text. Ground your analysis strictly in the provided ac
       summary = `${sanitizedCompany} is in early exploration with minimal high-intent behavioral pings. Best suited for automated low-touch educational sequences.`;
     }
 
-    return { summary, confidence: 0.88 };
+    return { summary, evidenceStrength: factorCoverage };
   }
 
   /**
@@ -189,23 +193,36 @@ Return strictly JSON with keys "subject" and "body". Do not use markdown backtic
       }
     }
 
-    // Realistic template engine with tone variations grounded in real prospect details
+    // Derive context strictly from observed activities in the lead's telemetry
+    const hasPricing = lead.activities.some((a) => a.type === "PRICING_VISIT");
+    const hasDocs = lead.activities.some((a) => a.type === "DOCS_VIEW");
+    const hasDemo = lead.activities.some((a) => a.type === "DEMO_VISIT");
+    const hasStar = lead.activities.some((a) => a.type === "GITHUB_STAR");
+    const hasHire = lead.activities.some((a) => a.type === "EXECUTIVE_HIRE");
+
+    let contextSignal = "recent interest in SignalFlow";
+    if (hasDemo) contextSignal = "your demo request inquiry";
+    else if (hasPricing) contextSignal = "your review of our pricing tiers";
+    else if (hasDocs) contextSignal = "your exploration of our API documentation";
+    else if (hasStar) contextSignal = "your team's star on our GitHub repository";
+    else if (hasHire) contextSignal = "recent leadership expansion at your company";
+
     const tones = {
       professional: {
-        subject: `Prioritizing revenue signals at ${sanitizedCompany}`,
-        body: `Hi ${sanitizedFirst},\n\nI noticed your team at ${sanitizedCompany} has been exploring real-time customer signal capture and lead prioritization.\n\nSignalFlow helps revenue teams automatically surface high-intent accounts and route them based on verified engagement events like documentation and pricing views.\n\nWould you have 15 minutes this Thursday for a brief walkthrough of how SignalFlow prioritizes inbound accounts?\n\nBest regards,\nSignalFlow Revenue Team`,
+        subject: `Following up on ${contextSignal} - ${sanitizedCompany}`,
+        body: `Hi ${sanitizedFirst},\n\nI am reaching out regarding ${contextSignal} from ${sanitizedCompany}.\n\nSignalFlow surfaces buying intent signals to help revenue teams prioritize the right accounts based on verified activity events.\n\nWould you have 15 minutes this Thursday for a brief walkthrough of how we route high-intent accounts?\n\nBest regards,\nSignalFlow Revenue Team`,
       },
       direct: {
-        subject: `Quick question re: ${sanitizedCompany}'s evaluation`,
-        body: `Hi ${sanitizedFirst},\n\nSaw your recent exploration of our documentation and enterprise capabilities today.\n\nAre you evaluating solutions for this quarter, or simply gathering architecture benchmarks?\n\nHappy to spin up a private sandbox if helpful.\n\nBest,\nSignalFlow`,
+        subject: `Quick question re: ${sanitizedCompany}`,
+        body: `Hi ${sanitizedFirst},\n\nNoticed ${contextSignal} from your team today.\n\nAre you actively evaluating intent capture solutions this quarter, or doing preliminary research?\n\nHappy to share additional benchmarks or spin up a sandbox environment if helpful.\n\nBest,\nSignalFlow`,
       },
       consultative: {
-        subject: `Accelerating high-intent conversion at ${sanitizedCompany}`,
-        body: `Hi ${sanitizedFirst},\n\nGiven your focus at ${sanitizedCompany}, I wanted to share how revenue teams identify buying intent earlier in the evaluation cycle.\n\nWhen multiple stakeholders begin reviewing security and pricing docs, our explainable scoring engine routes the opportunity immediately so your team can engage while interest is high.\n\nOpen to discussing how this maps to your current workflow?\n\nCheers,\nSignalFlow`,
+        subject: `Intent signal capture at ${sanitizedCompany}`,
+        body: `Hi ${sanitizedFirst},\n\nFollowing up on ${contextSignal} from ${sanitizedCompany}.\n\nWhen buying teams begin evaluating technical specifications and commercial terms, timing outreach accurately makes all the difference.\n\nWould love to learn more about how your team currently prioritizes inbound interest and explore whether SignalFlow can help.\n\nCheers,\nSignalFlow`,
       },
       technical: {
-        subject: `SignalFlow tenant isolation & webhook architecture for ${sanitizedCompany}`,
-        body: `Hi ${sanitizedFirst},\n\nNoticed your recent exploration of our integration APIs and webhooks. Our architecture supports strict workspace isolation, sub-second score calculation, and bi-directional CRM syncing.\n\nWould you be open to an engineering-to-engineering briefing on our data pipeline?\n\nBest,\nSignalFlow Solutions Architecture`,
+        subject: `SignalFlow telemetry and API integration for ${sanitizedCompany}`,
+        body: `Hi ${sanitizedFirst},\n\nFollowing up on ${contextSignal} from ${sanitizedCompany}.\n\nOur platform ingests web, documentation, and product telemetry to calculate deterministic account intent scores in real time.\n\nWould you be open to a quick technical briefing on our ingestion pipeline and webhook options?\n\nBest,\nSignalFlow Solutions Architecture`,
       },
     };
 

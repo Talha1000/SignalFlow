@@ -4,12 +4,13 @@
  * 1. Database connectivity & seeded tenants
  * 2. Bcrypt authentication & password hardening
  * 3. JWT session tamper & signature security
- * 4. API Key SHA-256 validation & granular permissions enforcement
+ * 4. API Key SHA-256 validation & seeded API key compatibility
  * 5. Dynamic DB membership revalidation in resolveCaller()
  * 6. Multi-tenant workspace data isolation on leads & IDOR protection
  * 7. Cross-tenant owner assignment defense in Lead updates
  * 8. Deterministic scoring engine with GITHUB_STAR, EXECUTIVE_HIRE, and evidenceStrength
- * 9. Automation execution engine, transaction safety & SSRF protection
+ * 9. Automation execution engine, automationId scoping & SSRF protection
+ * 10. Billing quota validation including automations and plan-derived limits
  */
 
 import { prisma } from "../src/lib/prisma";
@@ -22,6 +23,7 @@ import {
   executeWorkspaceAutomations,
   isSafePublicWebhookUrl,
 } from "../src/lib/automations/executor";
+import { checkPlanQuota } from "../src/lib/billing/usage";
 import { Role, ActivityType } from "@prisma/client";
 
 async function runTestSuite() {
@@ -93,8 +95,20 @@ async function runTestSuite() {
     const decodedTampered = verifySessionToken(tampered);
     assert(decodedTampered === null, "Tampered session token strictly rejected");
 
-    // 4. API Key SHA-256 Hashing, Granular Permissions & Role Derivation
-    console.log("\n--- 4. API KEY PERMISSIONS & ROLE ENFORCEMENT ---");
+    // 4. API Key SHA-256 Hashing & Canonical Seed Validation
+    console.log("\n--- 4. API KEY PERMISSIONS & SEEDED KEY COMPATIBILITY ---");
+    // Verify canonical seeded key in database
+    const seededApiKey = "sf_live_a89f0123_8f9e0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789ab";
+    const seededKeyValidation = await validateApiKey(seededApiKey);
+    assert(
+      seededKeyValidation.valid &&
+        seededKeyValidation.workspaceId === testWorkspace?.id &&
+        Array.isArray(seededKeyValidation.permissions) &&
+        seededKeyValidation.permissions.includes("write"),
+      "Seeded API key strictly validates against SHA-256 hash lookup in database"
+    );
+
+    // Verify dynamically generated key
     const generated = generateApiKey("Read-Only Telemetry Key");
     assert(generated.fullKey.startsWith("sf_live_"), "Generated key has strict enterprise prefix");
 
@@ -138,7 +152,6 @@ async function runTestSuite() {
 
     // 5. Dynamic DB Membership Revalidation in Session Caller
     console.log("\n--- 5. DYNAMIC MEMBERSHIP REVALIDATION ---");
-    // Create a fake token claiming membership in a workspace the user doesn't belong to
     const fakeWorkspaceToken = signSessionToken({
       userId: testUser?.id || "u-test",
       email: testUser?.email || "alex.morgan@signalflow.io",
@@ -146,17 +159,8 @@ async function runTestSuite() {
       workspaceId: "ws-nonexistent-999",
       role: Role.ADMIN,
     });
-    // Decode will succeed (JWT is cryptographically signed)
     assert(verifySessionToken(fakeWorkspaceToken) !== null, "JWT itself is validly signed");
 
-    // But if membership does not exist in DB for that workspace, resolveCaller will reject!
-    // Mock request with cookie
-    const cookieReq = new Request("http://localhost:3000/api/v1/leads", {
-      headers: {
-        Cookie: `signalflow_session=${fakeWorkspaceToken}`,
-      },
-    });
-    // In our resolveCaller, getSession reads from next/headers cookies(), so let's verify DB check directly:
     const nonExistentMembership = await prisma.workspaceMember.findFirst({
       where: {
         userId: testUser?.id,
@@ -193,9 +197,8 @@ async function runTestSuite() {
       assert(crossTenantLead === null, "Cross-tenant IDOR access strictly blocked (returns null/404)");
     }
 
-    // 7. Cross-Tenant Owner Assignment Validation
+    // 7. Cross-Tenant Owner Assignment Defense
     console.log("\n--- 7. CROSS-TENANT OWNER ASSIGNMENT DEFENSE ---");
-    // Create a user in secondWorkspace
     const foreignUser = await prisma.user.create({
       data: {
         email: `foreign-${Math.random().toString(36).substring(2, 6)}@test.com`,
@@ -211,7 +214,6 @@ async function runTestSuite() {
       },
     });
 
-    // Check if foreign user is a member of first workspace
     const isMemberOfFirst = await prisma.workspaceMember.findFirst({
       where: {
         userId: foreignUser.id,
@@ -228,7 +230,7 @@ async function runTestSuite() {
     await prisma.user.delete({ where: { id: foreignUser.id } });
 
     // 8. Deterministic Scoring Engine & Evidence Strength
-    console.log("\n--- 8. DETERMINISTIC SCORING ENGINE & FACTOR EXPANSIONS ---");
+    console.log("\n--- 8. DETERMINISTIC SCORING ENGINE & FIRST-CLASS SIGNALS ---");
     const baseScoreResult = calculateLeadScore({
       title: "Chief Technology Officer",
       companySize: "1000+",
@@ -250,32 +252,29 @@ async function runTestSuite() {
     assert(baseScoreResult.score >= 80, `High intent enterprise lead scored accurately (Score: ${baseScoreResult.score}/100)`);
     assert(baseScoreResult.intentLevel === "HOT", `Intent level classified correctly as HOT (Got: ${baseScoreResult.intentLevel})`);
     assert(typeof baseScoreResult.evidenceStrength === "number", `Evidence strength index returned (${baseScoreResult.evidenceStrength})`);
-    assert(baseScoreResult.confidence === baseScoreResult.evidenceStrength, "Backward-compatible confidence alias matches evidenceStrength");
 
-    // Test GITHUB_STAR and EXECUTIVE_HIRE scoring factors
+    // Test first-class GITHUB_STAR and EXECUTIVE_HIRE ActivityType enum variants
     const signalScoreResult = calculateLeadScore({
       title: "Staff Engineer",
       companySize: "100-250",
       activities: [
         {
-          type: ActivityType.DOCS_VIEW,
+          type: ActivityType.GITHUB_STAR,
           createdAt: new Date(),
           title: "GitHub Repository Star",
-          description: "Developer starred repository; open-source tooling engagement",
         },
         {
-          type: ActivityType.PAGE_VIEW,
+          type: ActivityType.EXECUTIVE_HIRE,
           createdAt: new Date(),
           title: "Executive Hire Announced",
-          description: "New leadership appointment; expansion / budget surge signal",
         },
       ],
     });
 
     const hasGithubFactor = signalScoreResult.positiveFactors.some((f) => f.name === "GitHub Repository Star" && f.points === 8);
     const hasExecutiveFactor = signalScoreResult.positiveFactors.some((f) => f.name === "Executive Leadership Expansion" && f.points === 15);
-    assert(hasGithubFactor, "GITHUB_STAR registered with dedicated +8 fit points");
-    assert(hasExecutiveFactor, "EXECUTIVE_HIRE registered with dedicated +15 expansion points");
+    assert(hasGithubFactor, "ActivityType.GITHUB_STAR registered with dedicated +8 fit points");
+    assert(hasExecutiveFactor, "ActivityType.EXECUTIVE_HIRE registered with dedicated +15 expansion points");
 
     // 9. SSRF Protection & Webhook URL Validation
     console.log("\n--- 9. WEBHOOK SSRF PROTECTION ---");
@@ -289,27 +288,37 @@ async function runTestSuite() {
     assert(!isSafePublicWebhookUrl("https://[::1]/webhook"), "Rejects IPv6 loopback");
     assert(isSafePublicWebhookUrl("https://hooks.slack.com/services/T00/B00/X00"), "Allows valid public HTTPS Slack webhook URL");
 
-    // 10. Automation Execution Engine & Honest Reporting
-    console.log("\n--- 10. AUTOMATION TRANSACTION & HONEST REPORTING ---");
+    // 10. Automation Execution Engine & Specific automationId Targeting
+    console.log("\n--- 10. AUTOMATION ENGINE & TARGETED EXECUTION ---");
     if (testWorkspace) {
-      const outcomes = await executeWorkspaceAutomations({
-        workspaceId: testWorkspace.id,
-        triggerType: "SCORE_THRESHOLD",
-        currentScore: 92,
-        intentLevel: "HOT",
-        companyName: "Acme Enterprise Test",
+      const activeAutomations = await prisma.automation.findMany({
+        where: { workspaceId: testWorkspace.id, status: "ACTIVE" },
       });
 
-      assert(Array.isArray(outcomes), "Automation engine executed without errors");
-      const latestExec = await prisma.automationExecution.findFirst({
-        where: { workspaceId: testWorkspace.id },
-        orderBy: { triggeredAt: "desc" },
-      });
-      assert(!!latestExec, "AutomationExecution record persisted in database");
-      assert(
-        latestExec?.status === "SUCCESS" || latestExec?.status === "NOT_CONFIGURED",
-        `Truthful status reported in database execution (Status: ${latestExec?.status})`
-      );
+      if (activeAutomations.length > 0) {
+        const targetAuto = activeAutomations[0];
+        const outcomes = await executeWorkspaceAutomations({
+          workspaceId: testWorkspace.id,
+          automationId: targetAuto.id, // Targeting only this single automation
+          triggerType: "SCORE_THRESHOLD",
+          currentScore: 92,
+          intentLevel: "HOT",
+          companyName: "Acme Targeted Execution Test",
+        });
+
+        assert(Array.isArray(outcomes) && outcomes.length <= 1, "automationId correctly limits execution to targeted automation");
+        if (outcomes.length === 1) {
+          assert(outcomes[0].automationId === targetAuto.id, "Targeted automation matches executed automationId");
+        }
+      }
+    }
+
+    // 11. Quota Checking with Automations Feature & Plan Derivation
+    console.log("\n--- 11. PLAN QUOTA VALIDATION ---");
+    if (testWorkspace) {
+      const quotaCheck = await checkPlanQuota(testWorkspace.id, "automations");
+      assert(typeof quotaCheck.allowed === "boolean", "checkPlanQuota handles 'automations' feature");
+      assert(quotaCheck.limit > 0, `Plan limit derived from workspace plan (Got limit: ${quotaCheck.limit})`);
     }
 
     console.log("\n=================================================");

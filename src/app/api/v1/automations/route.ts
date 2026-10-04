@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
+import { PERMISSIONS } from "@/lib/auth/rbac";
 import { executeWorkspaceAutomations } from "@/lib/automations/executor";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
@@ -14,8 +15,14 @@ export async function GET(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (caller.isApiKey && !caller.permissions?.includes("read")) {
-      return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+    if (caller.isApiKey) {
+      if (!caller.permissions?.includes("read")) {
+        return apiError("API key lacks 'read' permission", 403, "FORBIDDEN");
+      }
+    } else {
+      if (!PERMISSIONS.VIEW_SEQUENCES(caller.role)) {
+        return apiError("Insufficient permissions to view automations", 403, "FORBIDDEN");
+      }
     }
 
     const automations = await prisma.automation.findMany({
@@ -44,8 +51,14 @@ export async function POST(request: Request) {
       return apiError("Authentication required", 401, "UNAUTHORIZED");
     }
 
-    if (caller.isApiKey && !caller.permissions?.includes("write")) {
-      return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+    if (caller.isApiKey) {
+      if (!caller.permissions?.includes("write")) {
+        return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+      }
+    } else {
+      if (!PERMISSIONS.MANAGE_AUTOMATIONS(caller.role)) {
+        return apiError("Insufficient permissions to trigger automations", 403, "FORBIDDEN");
+      }
     }
 
     const body = await request.json();
@@ -65,7 +78,7 @@ export async function POST(request: Request) {
     let lead = null;
     if (leadId) {
       lead = await prisma.lead.findFirst({
-        where: { id: leadId, workspaceId: caller.workspaceId },
+        where: { id: leadId, workspaceId: caller.workspaceId, deletedAt: null },
         include: { company: true },
       });
       if (!lead) {
@@ -73,13 +86,25 @@ export async function POST(request: Request) {
       }
     }
 
+    const effectiveTrigger = eventType || "SCORE_THRESHOLD";
+
+    // Truthful telemetry: score-based triggers require an actual lead
+    if (effectiveTrigger === "SCORE_THRESHOLD" && !lead) {
+      return apiError(
+        "A valid 'leadId' belonging to this workspace is required to evaluate SCORE_THRESHOLD automations.",
+        400,
+        "VALIDATION_FAILED"
+      );
+    }
+
     const outcomes = await executeWorkspaceAutomations({
       workspaceId: caller.workspaceId,
+      automationId: automationId || undefined,
       leadId: lead?.id,
-      triggerType: eventType || "SCORE_THRESHOLD",
-      currentScore: lead?.score ?? 85,
-      intentLevel: lead?.intentLevel ?? "HOT",
-      companyName: lead?.company?.name ?? "Target Account",
+      triggerType: effectiveTrigger,
+      currentScore: lead?.score,
+      intentLevel: lead?.intentLevel,
+      companyName: lead?.company?.name || undefined,
     });
 
     return apiSuccess(
@@ -94,4 +119,3 @@ export async function POST(request: Request) {
     return apiError("Failed to trigger automation", 500, "TRIGGER_ERROR", error.message);
   }
 }
-

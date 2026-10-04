@@ -50,6 +50,8 @@ enum ActivityType {
   PRICING_VISIT
   DEMO_VISIT
   DOCS_VIEW
+  GITHUB_STAR
+  EXECUTIVE_HIRE
   EMAIL_OPEN
   EMAIL_CLICK
   EMAIL_REPLY
@@ -226,7 +228,7 @@ model LeadScore {
   negativeFactors  Json        @default("[]")
   delta7d          Int         @default(0)
   explanation      String?
-  confidence       Float       @default(0.85)
+  evidenceStrength Float       @default(0.85)
   lastCalculatedAt DateTime    @default(now())
 
   workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

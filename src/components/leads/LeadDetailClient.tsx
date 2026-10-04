@@ -310,7 +310,7 @@ export function LeadDetailClient({
                   Recommended Next Play
                 </span>
                 <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                  Confidence: {lead.leadScore?.confidence ? `${(lead.leadScore.confidence * 100).toFixed(0)}%` : "92%"}
+                  Evidence Coverage: {lead.leadScore?.evidenceStrength ? `${(lead.leadScore.evidenceStrength * 100).toFixed(0)}%` : "85%"}
                 </span>
               </div>
               <p className="text-xs text-slate-200 leading-relaxed font-medium">

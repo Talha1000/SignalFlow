@@ -1,5 +1,6 @@
 import { PrismaClient, Role, Plan, LeadStage, IntentLevel, ActivityType, SequenceStatus, EnrollmentStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -432,7 +433,7 @@ async function main() {
       negFactors: [{ name: "Inactivity last weekend", points: -2 }],
       delta7d: 21,
       explanation: "Sarah and 2 team members from Acme Tech show strong purchase intent. Repeated visits to the enterprise pricing and API documentation indicate immediate solution evaluation.",
-      confidence: 0.94,
+      evidenceStrength: 0.94,
     },
     {
       company: "ApexCloud Platforms",
@@ -454,7 +455,7 @@ async function main() {
       negFactors: [],
       delta7d: 28,
       explanation: "ApexCloud's CTO booked a demo directly after reviewing our SOC2 and security whitepaper. Highly qualified enterprise deal.",
-      confidence: 0.92,
+      evidenceStrength: 0.92,
     },
     {
       company: "SecurityZero Corp",
@@ -476,7 +477,7 @@ async function main() {
       negFactors: [],
       delta7d: 34,
       explanation: "Extreme technical engagement. SecurityZero is verifying enterprise identity management and tenant isolation.",
-      confidence: 0.96,
+      evidenceStrength: 0.96,
     },
     {
       company: "HyperScale Networks",
@@ -497,7 +498,7 @@ async function main() {
       negFactors: [],
       delta7d: 19,
       explanation: "Fast-moving prospect. Both Product and Sales Engineering leadership are aligned on budget.",
-      confidence: 0.91,
+      evidenceStrength: 0.91,
     },
     {
       company: "Quantix Financial",
@@ -518,7 +519,7 @@ async function main() {
       negFactors: [{ name: "Longer procurement review cycle", points: -4 }],
       delta7d: 14,
       explanation: "Quantix Financial requires strict auditability and high throughput. Strong fit with high willingness to pay.",
-      confidence: 0.88,
+      evidenceStrength: 0.88,
     },
     {
       company: "PeakFlow Systems",
@@ -539,7 +540,7 @@ async function main() {
       negFactors: [],
       delta7d: 22,
       explanation: "PeakFlow COO is frustrated with current vendor latency and evaluating migration options.",
-      confidence: 0.89,
+      evidenceStrength: 0.89,
     },
     {
       company: "Lumina Health Systems",
@@ -560,7 +561,7 @@ async function main() {
       negFactors: [{ name: "Inactivity past 5 days awaiting legal", points: -6 }],
       delta7d: 8,
       explanation: "High deal value. Currently waiting on hospital legal review before advancing to procurement.",
-      confidence: 0.85,
+      evidenceStrength: 0.85,
     },
     {
       company: "DataForge Analytics",
@@ -580,7 +581,7 @@ async function main() {
       negFactors: [{ name: "Budget approval slated for next quarter", points: -5 }],
       delta7d: 11,
       explanation: "High technical affinity. Ready to pilot in sandbox environment.",
-      confidence: 0.87,
+      evidenceStrength: 0.87,
     },
     {
       company: "NexaCore Robotics",
@@ -600,7 +601,7 @@ async function main() {
       negFactors: [{ name: "Timezone delay in correspondence", points: -4 }],
       delta7d: 7,
       explanation: "Strategic European enterprise account exploring automated signal triggers for connected hardware.",
-      confidence: 0.82,
+      evidenceStrength: 0.82,
     },
     {
       company: "OmniChannel Retail",
@@ -620,7 +621,7 @@ async function main() {
       negFactors: [{ name: "Has not responded to calendar invite", points: -5 }],
       delta7d: 4,
       explanation: "Steady interest but competing priorities with upcoming retail peak season.",
-      confidence: 0.80,
+      evidenceStrength: 0.80,
     },
     {
       company: "Nexus Logistics Global",
@@ -640,7 +641,7 @@ async function main() {
       negFactors: [{ name: "Legacy enterprise tech stack friction", points: -8 }],
       delta7d: -3,
       explanation: "Lead opened outreach sequence but hasn't yet committed to product demo.",
-      confidence: 0.76,
+      evidenceStrength: 0.76,
     },
     {
       company: "OpsMaster Cloud",
@@ -657,7 +658,7 @@ async function main() {
       negFactors: [{ name: "Single user signup", points: -4 }],
       delta7d: 2,
       explanation: "Solo engineer exploring tooling. Needs peer buy-in before purchase.",
-      confidence: 0.74,
+      evidenceStrength: 0.74,
     },
     {
       company: "Veloce Media Group",
@@ -674,7 +675,7 @@ async function main() {
       negFactors: [{ name: "No response after 7 days", points: -6 }],
       delta7d: -8,
       explanation: "Cooling lead. Engaged early in the campaign but momentum has slowed.",
-      confidence: 0.75,
+      evidenceStrength: 0.75,
     },
     {
       company: "BioSync Therapeutics",
@@ -691,7 +692,7 @@ async function main() {
       negFactors: [{ name: "21 days of inactivity", points: -12 }],
       delta7d: -14,
       explanation: "Downloaded whitepaper 3 weeks ago; no recent web or email engagement.",
-      confidence: 0.78,
+      evidenceStrength: 0.78,
     },
     {
       company: "DevSphere Tools",
@@ -708,7 +709,7 @@ async function main() {
       negFactors: [{ name: "Very small company size (sub-20)", points: -8 }],
       delta7d: -2,
       explanation: "Small team with low willingness to pay for enterprise tier.",
-      confidence: 0.85,
+      evidenceStrength: 0.85,
     },
     {
       company: "Synapse Talent AI",
@@ -728,7 +729,7 @@ async function main() {
       ],
       delta7d: -10,
       explanation: "Completely cold. Inactivity triggers suggest lack of current budget or relevance.",
-      confidence: 0.95,
+      evidenceStrength: 0.95,
     },
   ];
 
@@ -763,7 +764,7 @@ async function main() {
         negativeFactors: l.negFactors,
         delta7d: l.delta7d,
         explanation: l.explanation,
-        confidence: l.confidence,
+        evidenceStrength: l.evidenceStrength,
       },
     });
 
@@ -950,13 +951,17 @@ async function main() {
   });
 
   // 11. API Keys & Webhooks
+  const canonicalApiKey = "sf_live_a89f0123_8f9e0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789ab";
+  const canonicalKeyPrefix = "a89f0123";
+  const canonicalKeyHash = crypto.createHash("sha256").update(canonicalApiKey).digest("hex");
+
   await prisma.apiKey.create({
     data: {
       workspaceId: workspace.id,
-      name: "Production Website Lead Ingestion",
-      keyPrefix: "sf_live_a89f",
-      keyHash: await bcrypt.hash("sf_live_a89f_secret_token_123", 10),
-      permissions: ["leads:write", "activities:write"],
+      name: "Production Inbound Telemetry Key",
+      keyPrefix: canonicalKeyPrefix,
+      keyHash: canonicalKeyHash,
+      permissions: ["read", "write"],
     },
   });
 

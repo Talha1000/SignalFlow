@@ -65,11 +65,11 @@ export async function POST(request: Request) {
         factorDescription = "Prospect replied to email sequence";
         break;
       case "GITHUB_STAR":
-        actType = ActivityType.DOCS_VIEW;
+        actType = ActivityType.GITHUB_STAR;
         factorDescription = "Developer starred repository; open-source product adoption signal";
         break;
       case "EXECUTIVE_HIRE":
-        actType = ActivityType.PAGE_VIEW;
+        actType = ActivityType.EXECUTIVE_HIRE;
         factorDescription = "Executive hire announced; organizational budget expansion signal";
         break;
       default:
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
           negativeFactors: scoreResult.negativeFactors as any,
           delta7d: scoreResult.scoreChange7d,
           explanation: scoreResult.explanation,
-          confidence: scoreResult.confidence,
+          evidenceStrength: scoreResult.evidenceStrength,
           lastCalculatedAt: new Date(),
         },
         create: {
@@ -222,7 +222,7 @@ export async function POST(request: Request) {
           negativeFactors: scoreResult.negativeFactors as any,
           delta7d: scoreResult.scoreChange7d,
           explanation: scoreResult.explanation,
-          confidence: scoreResult.confidence,
+          evidenceStrength: scoreResult.evidenceStrength,
         },
       });
 

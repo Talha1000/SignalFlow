@@ -248,7 +248,7 @@ export async function POST(request: Request) {
         negativeFactors: scoreResult.negativeFactors as any,
         delta7d: scoreResult.scoreChange7d,
         explanation: scoreResult.explanation,
-        confidence: scoreResult.confidence,
+        evidenceStrength: scoreResult.evidenceStrength,
       },
     });
 
