@@ -156,6 +156,7 @@ model Company {
 
   @@index([workspaceId])
   @@index([domain])
+  @@index([workspaceId, domain])
 }
 
 model Contact {
@@ -179,6 +180,7 @@ model Contact {
 
   @@index([workspaceId])
   @@index([email])
+  @@index([workspaceId, email])
 }
 
 model Lead {
@@ -216,6 +218,7 @@ model Lead {
   @@index([stage])
   @@index([ownerId])
   @@index([lastActivityAt])
+  @@index([workspaceId, companyId, deletedAt])
 }
 
 model LeadScore {
@@ -255,6 +258,7 @@ model ScoreEvent {
   @@index([workspaceId])
   @@index([leadId])
   @@index([createdAt])
+  @@index([leadId, createdAt])
 }
 
 model Activity {
@@ -277,6 +281,8 @@ model Activity {
   @@index([workspaceId])
   @@index([leadId])
   @@index([createdAt])
+  @@index([workspaceId, companyId])
+  @@index([leadId, createdAt])
 }
 
 model Sequence {

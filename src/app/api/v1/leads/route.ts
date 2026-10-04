@@ -8,7 +8,7 @@ import { PERMISSIONS } from "@/lib/auth/rbac";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { ActivityType, LeadStage, Prisma } from "@prisma/client";
 import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
-import { checkAndConsumePlanQuota } from "@/lib/billing/usage";
+import { checkAndConsumePlanQuota, PLAN_LIMITS } from "@/lib/billing/usage";
 import { z } from "zod";
 
 const CreateLeadSchema = z.object({
@@ -168,16 +168,6 @@ export async function POST(request: Request) {
 
     const body = parseResult.data;
 
-    // Atomic Plan Quota Check & Reservation
-    const quotaCheck = await checkAndConsumePlanQuota(caller.workspaceId, "leads", 1);
-    if (!quotaCheck.allowed) {
-      return apiError(
-        `Workspace lead limit reached (${quotaCheck.current}/${quotaCheck.limit}). Please upgrade plan.`,
-        403,
-        "QUOTA_EXCEEDED"
-      );
-    }
-
     const companyName = body.companyName || "Unknown Organization";
     const contactName = body.contactName || "Primary Contact";
     const nameParts = contactName.split(" ");
@@ -186,134 +176,168 @@ export async function POST(request: Request) {
     const domain = body.domain || `${companyName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`;
     const contactEmail = body.email || `contact@${domain}`;
 
-    // 1. Find or create Company strictly scoped to workspace
-    let company = await prisma.company.findFirst({
-      where: {
-        workspaceId: caller.workspaceId,
-        OR: [{ name: companyName }, { domain }],
-      },
-    });
+    // Atomically execute lead creation, company/contact resolution, score records, and quota increment
+    // If any database operation fails, the transaction rolls back completely and NO quota is consumed.
+    const createdData = await prisma.$transaction(async (tx) => {
+      // 1. Check workspace plan quota within transaction
+      const workspace = await tx.workspace.findUnique({
+        where: { id: caller.workspaceId },
+        include: { usage: true },
+      });
+      if (!workspace) throw new Error("Workspace not found");
 
-    if (!company) {
-      company = await prisma.company.create({
-        data: {
+      const limits = PLAN_LIMITS[workspace.plan];
+      const currentLeads = workspace.usage ? workspace.usage.leadsCount : 0;
+      if (currentLeads + 1 > limits.leads) {
+        throw new Error(`QUOTA_EXCEEDED:${currentLeads}:${limits.leads}`);
+      }
+
+      // 2. Find or create Company strictly scoped to workspace
+      let company = await tx.company.findFirst({
+        where: {
           workspaceId: caller.workspaceId,
-          name: companyName,
-          domain,
-          industry: body.industry || "B2B Technology",
-          size: body.companySize || "100-500",
-          annualRevenue: body.annualRevenue || "$10M-$50M",
-          location: body.location || "North America",
-          intentScore: 50,
+          OR: [{ name: companyName }, { domain }],
         },
       });
-    }
 
-    // 2. Find or create Contact strictly scoped to workspace
-    let contact = await prisma.contact.findFirst({
-      where: {
-        workspaceId: caller.workspaceId,
-        email: contactEmail,
-      },
-    });
+      if (!company) {
+        company = await tx.company.create({
+          data: {
+            workspaceId: caller.workspaceId,
+            name: companyName,
+            domain,
+            industry: body.industry || "B2B Technology",
+            size: body.companySize || "100-500",
+            annualRevenue: body.annualRevenue || "$10M-$50M",
+            location: body.location || "North America",
+            intentScore: 50,
+          },
+        });
+      }
 
-    if (!contact) {
-      contact = await prisma.contact.create({
+      // 3. Find or create Contact strictly scoped to workspace
+      let contact = await tx.contact.findFirst({
+        where: {
+          workspaceId: caller.workspaceId,
+          email: contactEmail,
+        },
+      });
+
+      if (!contact) {
+        contact = await tx.contact.create({
+          data: {
+            workspaceId: caller.workspaceId,
+            companyId: company.id,
+            firstName,
+            lastName,
+            email: contactEmail,
+            title: body.title || "Decision Maker",
+            department: body.department || "Operations",
+            phone: body.phone || null,
+          },
+        });
+      }
+
+      // 4. Calculate score deterministically
+      const scoreResult = calculateLeadScore({
+        title: body.title || contact.title,
+        companySize: company.size,
+        industry: company.industry,
+        activities: [
+          {
+            type: ActivityType.PAGE_VIEW,
+            createdAt: new Date(),
+            title: "Initial lead ingestion",
+            description: "Created via SignalFlow CRM",
+          },
+        ],
+      });
+
+      const dealValue = Number(body.dealValue || 45000);
+
+      // 5. Create Lead in database
+      const lead = await tx.lead.create({
         data: {
           workspaceId: caller.workspaceId,
           companyId: company.id,
-          firstName,
-          lastName,
-          email: contactEmail,
-          title: body.title || "Decision Maker",
-          department: body.department || "Operations",
-          phone: body.phone || null,
+          contactId: contact.id,
+          ownerId: caller.userId || null,
+          stage: (body.stage?.toUpperCase() as LeadStage) || LeadStage.NEW,
+          dealValue,
+          score: scoreResult.score,
+          intentLevel: scoreResult.intentLevel,
+          source: body.source || "WEBSITE",
+          nextAction: body.nextAction || "Initiate qualification sequence",
+        },
+        include: {
+          company: true,
+          contact: true,
+          owner: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
         },
       });
-    }
 
-    // 3. Calculate score deterministically
-    const scoreResult = calculateLeadScore({
-      title: body.title || contact.title,
-      companySize: company.size,
-      industry: company.industry,
-      activities: [
-        {
+      // 6. Create LeadScore record
+      const leadScore = await tx.leadScore.create({
+        data: {
+          workspaceId: caller.workspaceId,
+          leadId: lead.id,
+          currentScore: scoreResult.score,
+          intentLevel: scoreResult.intentLevel,
+          positiveFactors: scoreResult.positiveFactors as any,
+          negativeFactors: scoreResult.negativeFactors as any,
+          delta7d: scoreResult.scoreChange7d,
+          explanation: scoreResult.explanation,
+          evidenceStrength: scoreResult.evidenceStrength,
+        },
+      });
+
+      // 7. Record initial ScoreEvent
+      await tx.scoreEvent.create({
+        data: {
+          workspaceId: caller.workspaceId,
+          leadId: lead.id,
+          previousScore: 0,
+          newScore: scoreResult.score,
+          delta: scoreResult.score,
+          factorName: "INITIAL_CALCULATION",
+          reason: "Initial lead profile scoring",
+        },
+      });
+
+      // 8. Record Activity
+      await tx.activity.create({
+        data: {
+          workspaceId: caller.workspaceId,
+          leadId: lead.id,
+          companyId: company.id,
+          contactId: contact.id,
           type: ActivityType.PAGE_VIEW,
-          createdAt: new Date(),
-          title: "Initial lead ingestion",
-          description: "Created via SignalFlow CRM",
+          title: "Lead Profile Created",
+          description: `Lead registered with intent score ${scoreResult.score}`,
         },
-      ],
-    });
+      });
 
-    const dealValue = Number(body.dealValue || 45000);
-
-    // 4. Create Lead in database
-    const lead = await prisma.lead.create({
-      data: {
-        workspaceId: caller.workspaceId,
-        companyId: company.id,
-        contactId: contact.id,
-        ownerId: caller.userId || null,
-        stage: (body.stage?.toUpperCase() as LeadStage) || LeadStage.NEW,
-        dealValue,
-        score: scoreResult.score,
-        intentLevel: scoreResult.intentLevel,
-        source: body.source || "WEBSITE",
-        nextAction: body.nextAction || "Initiate qualification sequence",
-      },
-      include: {
-        company: true,
-        contact: true,
-        owner: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
+      // 9. Consume quota atomically inside the same transaction
+      await tx.usageRecord.upsert({
+        where: { workspaceId: caller.workspaceId },
+        update: { leadsCount: { increment: 1 } },
+        create: {
+          workspaceId: caller.workspaceId,
+          leadsCount: 1,
+          aiCreditsUsed: 0,
+          emailsSentCount: 0,
+          teamMembersCount: 1,
         },
-      },
+      });
+
+      return { lead, leadScore, scoreResult, company, contact };
     });
 
-    // 5. Create LeadScore record
-    const leadScore = await prisma.leadScore.create({
-      data: {
-        workspaceId: caller.workspaceId,
-        leadId: lead.id,
-        currentScore: scoreResult.score,
-        intentLevel: scoreResult.intentLevel,
-        positiveFactors: scoreResult.positiveFactors as any,
-        negativeFactors: scoreResult.negativeFactors as any,
-        delta7d: scoreResult.scoreChange7d,
-        explanation: scoreResult.explanation,
-        evidenceStrength: scoreResult.evidenceStrength,
-      },
-    });
+    const { lead, leadScore, scoreResult, company, contact } = createdData;
 
-    // 6. Record initial ScoreEvent
-    await prisma.scoreEvent.create({
-      data: {
-        workspaceId: caller.workspaceId,
-        leadId: lead.id,
-        previousScore: 0,
-        newScore: scoreResult.score,
-        delta: scoreResult.score,
-        factorName: "INITIAL_CALCULATION",
-        reason: "Initial lead profile scoring",
-      },
-    });
-
-    // 7. Record Activity
-    await prisma.activity.create({
-      data: {
-        workspaceId: caller.workspaceId,
-        leadId: lead.id,
-        companyId: company.id,
-        contactId: contact.id,
-        type: ActivityType.PAGE_VIEW,
-        title: "Lead Profile Created",
-        description: `Lead registered with intent score ${scoreResult.score}`,
-      },
-    });
-
-    // 8. Write Audit Log
+    // Write Audit Log
     await logAuditEvent({
       workspaceId: caller.workspaceId,
       userId: caller.userId,
@@ -328,7 +352,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // 9. Execute workspace automations for LEAD_CREATED
+    // Execute workspace automations asynchronously (non-blocking)
     executeWorkspaceAutomations({
       workspaceId: caller.workspaceId,
       leadId: lead.id,

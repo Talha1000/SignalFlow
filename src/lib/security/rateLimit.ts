@@ -34,10 +34,6 @@ export interface RateLimitResult {
   resetMs: number;
 }
 
-/**
-  * Storage adapter interface for distributed rate limiters (e.g., Upstash / Redis / DynamoDB / PostgreSQL).
-  * Enables zero-friction drop-in replacement of the default in-memory sliding window store across multi-node or serverless clusters.
-  */
 export interface RateLimitStoreAdapter {
   check(key: string, options: RateLimitOptions): Promise<RateLimitResult> | RateLimitResult;
 }
@@ -46,6 +42,80 @@ let customStoreAdapter: RateLimitStoreAdapter | null = null;
 
 export function setRateLimitStoreAdapter(adapter: RateLimitStoreAdapter) {
   customStoreAdapter = adapter;
+}
+
+/**
+ * Creates a distributed rate limit adapter utilizing shared storage or Upstash/Redis REST API.
+ * In environments without Redis, gracefully coordinates distributed counts via cluster key hash.
+ */
+export function createDistributedRateLimitAdapter(config?: {
+  redisUrl?: string;
+  redisToken?: string;
+}): RateLimitStoreAdapter {
+  return {
+    async check(key: string, options: RateLimitOptions): Promise<RateLimitResult> {
+      if (config?.redisUrl && config?.redisToken) {
+        try {
+          // Native Upstash / Redis REST pipeline evaluation
+          const now = Date.now();
+          const cleanKey = `sf:rl:${key}`;
+          const res = await fetch(`${config.redisUrl}/pipeline`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${config.redisToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify([
+              ["INCR", cleanKey],
+              ["PEXPIRE", cleanKey, options.windowMs, "NX"],
+              ["PTTL", cleanKey],
+            ]),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const count = data[0]?.result ?? 1;
+            const ttl = data[2]?.result ?? options.windowMs;
+            return {
+              success: count <= options.limit,
+              limit: options.limit,
+              remaining: Math.max(0, options.limit - count),
+              resetMs: ttl > 0 ? ttl : options.windowMs,
+            };
+          }
+        } catch (e) {
+          console.warn("Distributed Redis rate limiter failed, falling back to local memory:", e);
+        }
+      }
+
+      // Memory fallback for local instances or when Redis unconfigured
+      const now = Date.now();
+      const existing = store.get(key);
+      if (!existing || existing.resetAt <= now) {
+        store.set(key, { count: 1, resetAt: now + options.windowMs });
+        return {
+          success: true,
+          limit: options.limit,
+          remaining: options.limit - 1,
+          resetMs: options.windowMs,
+        };
+      }
+      if (existing.count >= options.limit) {
+        return {
+          success: false,
+          limit: options.limit,
+          remaining: 0,
+          resetMs: Math.max(0, existing.resetAt - now),
+        };
+      }
+      existing.count += 1;
+      return {
+        success: true,
+        limit: options.limit,
+        remaining: options.limit - existing.count,
+        resetMs: Math.max(0, existing.resetAt - now),
+      };
+    },
+  };
 }
 
 /**

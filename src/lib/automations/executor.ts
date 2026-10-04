@@ -242,38 +242,81 @@ export async function executeWorkspaceAutomations(
             if (slackWebhookUrl && typeof slackWebhookUrl === "string") {
               const isSafe = await isSafePublicWebhookUrlAsync(slackWebhookUrl);
               if (isSafe) {
-                try {
-                  const controller = new AbortController();
-                  const timeoutId = setTimeout(() => controller.abort(), 6000);
-                  const res = await fetch(slackWebhookUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      text: `🔥 *SignalFlow Hot Lead Alert*: ${context.companyName || "Prospect"} reached score ${context.currentScore} (${context.intentLevel}).`,
-                    }),
-                    signal: controller.signal,
-                  });
-                  clearTimeout(timeoutId);
+                // Idempotent dispatch key with retry logic and strict manual redirect SSRF validation
+                const idempotencyKey = `sf_auto_${auto.id}_${context.leadId || "global"}_${Date.now()}`;
+                let attempts = 0;
+                const maxAttempts = 3;
+                let delivered = false;
+                let lastError = "";
+                let currentUrl = slackWebhookUrl;
 
-                  if (res.ok) {
-                    actionsExecuted.push({
-                      type: "SLACK_ALERT",
-                      status: "COMPLETED",
-                      message: "Alert delivered to configured Slack webhook",
+                while (attempts < maxAttempts && !delivered) {
+                  attempts++;
+                  try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 6000);
+                    
+                    // fetch with redirect: "manual" so HTTP 301/302 cannot bypass SSRF filters to internal IP
+                    const res = await fetch(currentUrl, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "X-SignalFlow-Idempotency-Key": idempotencyKey,
+                        "X-SignalFlow-Delivery-Attempt": String(attempts),
+                      },
+                      body: JSON.stringify({
+                        text: `🔥 *SignalFlow Hot Lead Alert*: ${context.companyName || "Prospect"} reached score ${context.currentScore} (${context.intentLevel}).`,
+                      }),
+                      redirect: "manual",
+                      signal: controller.signal,
                     });
-                  } else {
-                    actionsExecuted.push({
-                      type: "SLACK_ALERT",
-                      status: "FAILED",
-                      message: `Slack endpoint responded with HTTP ${res.status}`,
-                    });
-                    overallStatus = "FAILED";
+                    clearTimeout(timeoutId);
+
+                    // Check for HTTP redirects (301, 302, 307, 308)
+                    if (res.status >= 300 && res.status < 400) {
+                      const redirectLocation = res.headers.get("location");
+                      if (redirectLocation) {
+                        const targetUrl = new URL(redirectLocation, currentUrl).toString();
+                        const isRedirectSafe = await isSafePublicWebhookUrlAsync(targetUrl);
+                        if (!isRedirectSafe) {
+                          throw new Error(`SSRF blocked on redirect destination: ${targetUrl}`);
+                        }
+                        currentUrl = targetUrl;
+                        continue; // follow redirect safely
+                      }
+                    }
+
+                    if (res.ok) {
+                      delivered = true;
+                      actionsExecuted.push({
+                        type: "SLACK_ALERT",
+                        status: "COMPLETED",
+                        message: `Alert delivered to configured Slack webhook (attempt ${attempts})`,
+                      });
+                    } else if (res.status >= 500 && attempts < maxAttempts) {
+                      // Transient server error: back off exponentially and retry
+                      lastError = `Server responded with ${res.status}`;
+                      await new Promise((resolve) => setTimeout(resolve, attempts * 500));
+                    } else {
+                      lastError = `Slack endpoint responded with HTTP ${res.status}`;
+                      break;
+                    }
+                  } catch (err: any) {
+                    lastError = err.message;
+                    if (err.message.includes("SSRF blocked")) {
+                      break; // Do not retry SSRF blocks
+                    }
+                    if (attempts < maxAttempts) {
+                      await new Promise((resolve) => setTimeout(resolve, attempts * 500));
+                    }
                   }
-                } catch (err: any) {
+                }
+
+                if (!delivered) {
                   actionsExecuted.push({
                     type: "SLACK_ALERT",
                     status: "FAILED",
-                    message: `Slack dispatch network error: ${err.message}`,
+                    message: `Slack dispatch error: ${lastError}`,
                   });
                   overallStatus = "FAILED";
                 }

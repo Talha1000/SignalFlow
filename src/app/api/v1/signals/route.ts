@@ -124,184 +124,192 @@ export async function POST(request: Request) {
         factorDescription = "Web page session activity";
     }
 
-    // 1. Find or create Company in caller's workspace
-    let company = await prisma.company.findFirst({
-      where: {
-        workspaceId: caller.workspaceId,
-        domain: cleanDomain,
-      },
-    });
-
-    if (!company) {
-      const generatedName =
-        body.companyName ||
-        cleanDomain.split(".")[0].replace(/^./, (str) => str.toUpperCase()) + " Inc";
-
-      company = await prisma.company.create({
-        data: {
+    // 1-5. Execute Company, Contact, Activity, LeadScore update, and ScoreEvent in a single atomic transaction
+    // This serializes scoring recalculation, prevents race conditions from concurrent webhook bursts, and guarantees ACID consistency.
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      // 1. Find or create Company in caller's workspace
+      let company = await tx.company.findFirst({
+        where: {
           workspaceId: caller.workspaceId,
           domain: cleanDomain,
-          name: generatedName,
-          industry: "Technology",
-          size: "100-500",
-          intentScore: 40,
-        },
-      });
-    }
-
-    // 2. Find or create Contact if provided
-    let contact = null;
-    if (body.contactEmail) {
-      contact = await prisma.contact.findFirst({
-        where: {
-          workspaceId: caller.workspaceId,
-          email: body.contactEmail.toLowerCase().trim(),
         },
       });
 
-      if (!contact) {
-        const cName = body.contactName || "Inbound Contact";
-        const parts = cName.split(" ");
-        contact = await prisma.contact.create({
+      if (!company) {
+        const generatedName =
+          body.companyName ||
+          cleanDomain.split(".")[0].replace(/^./, (str) => str.toUpperCase()) + " Inc";
+
+        company = await tx.company.create({
           data: {
             workspaceId: caller.workspaceId,
-            companyId: company.id,
-            email: body.contactEmail.toLowerCase().trim(),
-            firstName: parts[0] || cName,
-            lastName: parts.slice(1).join(" ") || "",
-            title: body.contactTitle || "Decision Maker",
+            domain: cleanDomain,
+            name: generatedName,
+            industry: "Technology",
+            size: "100-500",
+            intentScore: 40,
           },
         });
       }
-    }
 
-    // 3. Find matching active Lead for company in caller's workspace
-    let lead = await prisma.lead.findFirst({
-      where: {
-        workspaceId: caller.workspaceId,
-        companyId: company.id,
-        deletedAt: null,
-      },
-      include: {
-        activities: {
-          take: 15,
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
+      // 2. Find or create Contact if provided
+      let contact = null;
+      if (body.contactEmail) {
+        contact = await tx.contact.findFirst({
+          where: {
+            workspaceId: caller.workspaceId,
+            email: body.contactEmail.toLowerCase().trim(),
+          },
+        });
 
-    // 4. Record Activity in database
-    const activity = await prisma.activity.create({
-      data: {
-        workspaceId: caller.workspaceId,
-        companyId: company.id,
-        leadId: lead?.id || null,
-        contactId: contact?.id || lead?.contactId || null,
-        type: actType,
-        title: body.title || `${body.signalType} registered`,
-        description: factorDescription,
-        metadata: body.metadata || undefined,
-      },
-    });
+        if (!contact) {
+          const cName = body.contactName || "Inbound Contact";
+          const parts = cName.split(" ");
+          contact = await tx.contact.create({
+            data: {
+              workspaceId: caller.workspaceId,
+              companyId: company.id,
+              email: body.contactEmail.toLowerCase().trim(),
+              firstName: parts[0] || cName,
+              lastName: parts.slice(1).join(" ") || "",
+              title: body.contactTitle || "Decision Maker",
+            },
+          });
+        }
+      }
 
-    // 5. Recalculate lead score if lead exists
-    let previousScore = lead?.score ?? 0;
-    let newScore = previousScore;
-    let intentLevel: IntentLevel = lead?.intentLevel ?? IntentLevel.COLD;
-    let scoreResult = null;
-
-    if (lead) {
-      const existingActivities = [
-        ...lead.activities,
-        {
-          type: actType,
-          createdAt: new Date(),
-          title: activity.title,
-          description: activity.description,
-        },
-      ];
-
-      scoreResult = calculateLeadScore({
-        title: body.contactTitle || "Engineering Leader",
-        companySize: company.size,
-        industry: company.industry,
-        activities: existingActivities.map((a) => ({
-          type: a.type,
-          createdAt: a.createdAt,
-          title: a.title,
-          description: a.description,
-        })),
-      });
-
-      newScore = scoreResult.score;
-      intentLevel = scoreResult.intentLevel;
-      const pointChange = newScore - previousScore;
-
-      // Update lead in Prisma
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: {
-          score: newScore,
-          intentLevel,
-          lastActivityAt: new Date(),
-        },
-      });
-
-      // Calculate true historical 7-day score movement from actual ScoreEvents
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const pastEvents = await prisma.scoreEvent.findMany({
+      // 3. Find matching active Lead for company in caller's workspace
+      let lead = await tx.lead.findFirst({
         where: {
-          leadId: lead.id,
-          createdAt: { gte: sevenDaysAgo },
-        },
-        select: { delta: true },
-      });
-      const historicalMovement7d = pastEvents.reduce((acc, ev) => acc + ev.delta, 0) + pointChange;
-
-      // Upsert LeadScore record
-      await prisma.leadScore.upsert({
-        where: { leadId: lead.id },
-        update: {
-          currentScore: newScore,
-          intentLevel,
-          positiveFactors: scoreResult.positiveFactors as any,
-          negativeFactors: scoreResult.negativeFactors as any,
-          delta7d: historicalMovement7d,
-          explanation: scoreResult.explanation,
-          evidenceStrength: scoreResult.evidenceStrength,
-          lastCalculatedAt: new Date(),
-        },
-        create: {
           workspaceId: caller.workspaceId,
-          leadId: lead.id,
-          currentScore: newScore,
-          intentLevel,
-          positiveFactors: scoreResult.positiveFactors as any,
-          negativeFactors: scoreResult.negativeFactors as any,
-          delta7d: historicalMovement7d,
-          explanation: scoreResult.explanation,
-          evidenceStrength: scoreResult.evidenceStrength,
+          companyId: company.id,
+          deletedAt: null,
+        },
+        include: {
+          activities: {
+            take: 15,
+            orderBy: { createdAt: "desc" },
+          },
         },
       });
 
-      // Record ScoreEvent
-      if (pointChange !== 0) {
-        await prisma.scoreEvent.create({
+      // 4. Record Activity in database
+      const activity = await tx.activity.create({
+        data: {
+          workspaceId: caller.workspaceId,
+          companyId: company.id,
+          leadId: lead?.id || null,
+          contactId: contact?.id || lead?.contactId || null,
+          type: actType,
+          title: body.title || `${body.signalType} registered`,
+          description: factorDescription,
+          metadata: body.metadata || undefined,
+        },
+      });
+
+      // 5. Recalculate lead score if lead exists
+      let previousScore = lead?.score ?? 0;
+      let newScore = previousScore;
+      let intentLevel: IntentLevel = lead?.intentLevel ?? IntentLevel.COLD;
+      let scoreResult = null;
+
+      if (lead) {
+        const existingActivities = [
+          ...lead.activities,
+          {
+            type: actType,
+            createdAt: new Date(),
+            title: activity.title,
+            description: activity.description,
+          },
+        ];
+
+        scoreResult = calculateLeadScore({
+          title: body.contactTitle || "Engineering Leader",
+          companySize: company.size,
+          industry: company.industry,
+          activities: existingActivities.map((a) => ({
+            type: a.type,
+            createdAt: a.createdAt,
+            title: a.title,
+            description: a.description,
+          })),
+        });
+
+        newScore = scoreResult.score;
+        intentLevel = scoreResult.intentLevel;
+        const pointChange = newScore - previousScore;
+
+        // Update lead in transaction
+        await tx.lead.update({
+          where: { id: lead.id },
           data: {
+            score: newScore,
+            intentLevel,
+            lastActivityAt: new Date(),
+          },
+        });
+
+        // Calculate true historical 7-day score movement from actual ScoreEvents inside transaction
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const pastEvents = await tx.scoreEvent.findMany({
+          where: {
+            leadId: lead.id,
+            createdAt: { gte: sevenDaysAgo },
+          },
+          select: { delta: true },
+        });
+        const historicalMovement7d = pastEvents.reduce((acc, ev) => acc + ev.delta, 0) + pointChange;
+
+        // Upsert LeadScore record
+        await tx.leadScore.upsert({
+          where: { leadId: lead.id },
+          update: {
+            currentScore: newScore,
+            intentLevel,
+            positiveFactors: scoreResult.positiveFactors as any,
+            negativeFactors: scoreResult.negativeFactors as any,
+            delta7d: historicalMovement7d,
+            explanation: scoreResult.explanation,
+            evidenceStrength: scoreResult.evidenceStrength,
+            lastCalculatedAt: new Date(),
+          },
+          create: {
             workspaceId: caller.workspaceId,
             leadId: lead.id,
-            previousScore,
-            newScore,
-            delta: pointChange,
-            factorName: body.signalType,
-            reason: factorDescription,
+            currentScore: newScore,
+            intentLevel,
+            positiveFactors: scoreResult.positiveFactors as any,
+            negativeFactors: scoreResult.negativeFactors as any,
+            delta7d: historicalMovement7d,
+            explanation: scoreResult.explanation,
+            evidenceStrength: scoreResult.evidenceStrength,
           },
         });
-      }
-    }
 
-    // 6. Execute matching workspace automations
-    const automationOutcomes = await executeWorkspaceAutomations({
+        // Record ScoreEvent
+        if (pointChange !== 0) {
+          await tx.scoreEvent.create({
+            data: {
+              workspaceId: caller.workspaceId,
+              leadId: lead.id,
+              previousScore,
+              newScore,
+              delta: pointChange,
+              factorName: body.signalType,
+              reason: factorDescription,
+            },
+          });
+        }
+      }
+
+      return { company, contact, lead, activity, previousScore, newScore, intentLevel, scoreResult };
+    });
+
+    const { company, lead, activity, previousScore, newScore, intentLevel, scoreResult } = transactionResult;
+
+    // 6. Execute matching workspace automations in the background (non-blocking for fast API response)
+    executeWorkspaceAutomations({
       workspaceId: caller.workspaceId,
       leadId: lead?.id,
       triggerType: newScore >= 80 ? "SCORE_THRESHOLD" : "SIGNAL_RECEIVED",
@@ -310,7 +318,7 @@ export async function POST(request: Request) {
       signalType: body.signalType,
       domain: cleanDomain,
       companyName: company.name,
-    });
+    }).catch((err) => console.error("Background automation execution error:", err));
 
     return apiSuccess(
       {
@@ -333,8 +341,8 @@ export async function POST(request: Request) {
           explanation: scoreResult?.explanation || "Activity registered into company telemetry timeline.",
         },
         automations: {
-          triggeredCount: automationOutcomes.length,
-          outcomes: automationOutcomes,
+          status: "DISPATCHED_ASYNC",
+          mode: "BACKGROUND",
         },
       },
       { durationMs: Date.now() - startTime },

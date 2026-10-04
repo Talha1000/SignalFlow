@@ -444,6 +444,43 @@ async function runTestSuite() {
     assert(healthJson.platform === undefined, "Platform details omitted from public health response");
     assert(healthJson.systemMetrics === undefined, "System memory metrics omitted from public health response");
 
+    // 19. No Quota Consumed on Operation Failure
+    console.log("\n--- 19. ZERO QUOTA LOSS ON OPERATION FAILURE ---");
+    if (testWorkspace) {
+      const { executeWithPlanQuota } = await import("../src/lib/billing/usage");
+      const usageBefore = await prisma.usageRecord.findUnique({
+        where: { workspaceId: testWorkspace.id },
+      });
+      const creditsBefore = usageBefore?.aiCreditsUsed || 0;
+
+      let threw = false;
+      try {
+        await executeWithPlanQuota(testWorkspace.id, "aiCredits", 1, async () => {
+          throw new Error("Simulated external AI provider outage");
+        });
+      } catch {
+        threw = true;
+      }
+
+      const usageAfter = await prisma.usageRecord.findUnique({
+        where: { workspaceId: testWorkspace.id },
+      });
+      const creditsAfter = usageAfter?.aiCreditsUsed || 0;
+
+      assert(threw, "Operation failure threw error as expected");
+      assert(creditsBefore === creditsAfter, `Quota was NOT consumed on operation failure (${creditsBefore} === ${creditsAfter})`);
+    }
+
+    // 20. Distributed Rate Limiter Adapter
+    console.log("\n--- 20. DISTRIBUTED RATE LIMITER ADAPTER ---");
+    const { createDistributedRateLimitAdapter } = await import("../src/lib/security/rateLimit");
+    const distAdapter = createDistributedRateLimitAdapter();
+    const distTestKey = `test_dist_rl_${Date.now()}`;
+    const distFirst = await distAdapter.check(distTestKey, { limit: 1, windowMs: 10000 });
+    assert(distFirst.success, "Distributed adapter permits first valid request");
+    const distSecond = await distAdapter.check(distTestKey, { limit: 1, windowMs: 10000 });
+    assert(!distSecond.success, "Distributed adapter blocks second excess request");
+
     console.log("\n=================================================");
     console.log(`SUMMARY: ${passes} PASSED, ${fails} FAILED`);
     console.log("=================================================");

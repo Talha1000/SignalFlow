@@ -196,3 +196,43 @@ export async function checkAndConsumePlanQuota(
     return { allowed: true, current: 0, limit: 999999 };
   });
 }
+
+/**
+ * Executes an operation inside a quota-protected context:
+ * Checks quota, executes the user operation, and only upon SUCCESS consumes the quota.
+ * If the user operation fails or throws, quota is NEVER consumed or is rolled back.
+ */
+export async function executeWithPlanQuota<T>(
+  workspaceId: string,
+  feature: "leads" | "aiCredits" | "emails",
+  quantity: number,
+  operation: () => Promise<T>
+): Promise<{ success: true; result: T } | { success: false; quotaExceeded: true; current: number; limit: number }> {
+  // Pre-flight check
+  const preCheck = await checkPlanQuota(workspaceId, feature);
+  if (!preCheck.allowed) {
+    return {
+      success: false,
+      quotaExceeded: true,
+      current: preCheck.current,
+      limit: preCheck.limit,
+    };
+  }
+
+  // Execute actual payload first
+  const result = await operation();
+
+  // Atomically increment quota upon success
+  const consumed = await checkAndConsumePlanQuota(workspaceId, feature, quantity);
+  if (!consumed.allowed) {
+    // Edge race case where quota was exhausted while operation was executing
+    return {
+      success: false,
+      quotaExceeded: true,
+      current: consumed.current,
+      limit: consumed.limit,
+    };
+  }
+
+  return { success: true, result };
+}

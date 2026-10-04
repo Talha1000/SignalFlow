@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { aiService } from "@/lib/ai/provider";
-import { checkAndConsumePlanQuota } from "@/lib/billing/usage";
+import { executeWithPlanQuota } from "@/lib/billing/usage";
 import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
@@ -37,16 +37,6 @@ export async function POST(request: Request) {
       return apiError("A valid query string is required", 400, "VALIDATION_FAILED");
     }
 
-    // Check and atomically consume workspace AI credit quota
-    const quota = await checkAndConsumePlanQuota(caller.workspaceId, "aiCredits", 1);
-    if (!quota.allowed) {
-      return apiError(
-        `AI credit limit reached (${quota.current}/${quota.limit}). Please upgrade your workspace tier.`,
-        403,
-        "QUOTA_EXCEEDED"
-      );
-    }
-
     // Query real data strictly scoped to caller's workspace
     const [leads, companies, activities] = await Promise.all([
       prisma.lead.findMany({
@@ -79,9 +69,20 @@ export async function POST(request: Request) {
       recentActivities: activities.map((a) => `${a.title}: ${a.description || ""}`),
     };
 
-    const answer = await aiService.askSalesCopilot(query, context);
+    // Execute with atomic quota protection: quota is only consumed if Copilot query SUCCEEDS
+    const quotaResult = await executeWithPlanQuota(caller.workspaceId, "aiCredits", 1, async () => {
+      return await aiService.askSalesCopilot(query, context);
+    });
 
-    return apiSuccess({ answer }, { durationMs: Date.now() - startTime });
+    if (!quotaResult.success) {
+      return apiError(
+        `AI credit limit reached (${quotaResult.current}/${quotaResult.limit}). Please upgrade your workspace tier.`,
+        403,
+        "QUOTA_EXCEEDED"
+      );
+    }
+
+    return apiSuccess({ answer: quotaResult.result }, { durationMs: Date.now() - startTime });
   } catch (error: any) {
     console.error("Copilot API error:", error);
     return apiError("Failed to generate answer", 500, "COPILOT_ERROR", error.message);

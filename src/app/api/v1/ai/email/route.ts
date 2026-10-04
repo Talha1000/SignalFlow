@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveCaller } from "@/lib/auth/resolveCaller";
 import { aiService } from "@/lib/ai/provider";
-import { checkAndConsumePlanQuota } from "@/lib/billing/usage";
+import { executeWithPlanQuota } from "@/lib/billing/usage";
 import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
 import { apiSuccess, apiError } from "@/lib/api/response";
 
@@ -56,16 +56,6 @@ export async function POST(request: Request) {
       return apiError("Lead not found in workspace", 404, "NOT_FOUND");
     }
 
-    // Atomically check and consume workspace AI quota (prevents overdraft race conditions)
-    const quota = await checkAndConsumePlanQuota(caller.workspaceId, "aiCredits", 1);
-    if (!quota.allowed) {
-      return apiError(
-        `AI credit limit reached (${quota.current}/${quota.limit}). Please upgrade your workspace tier.`,
-        403,
-        "QUOTA_EXCEEDED"
-      );
-    }
-
     const resolvedTitle =
       lead.contact?.title ||
       (lead.company?.name ? `Leader at ${lead.company.name}` : "Decision Maker");
@@ -86,9 +76,20 @@ export async function POST(request: Request) {
       })),
     };
 
-    const email = await aiService.generatePersonalizedEmail(leadContext, tone, customInstructions);
+    // Execute with atomic quota protection: quota is only consumed if AI generation SUCCEEDS
+    const quotaResult = await executeWithPlanQuota(caller.workspaceId, "aiCredits", 1, async () => {
+      return await aiService.generatePersonalizedEmail(leadContext, tone, customInstructions);
+    });
 
-    return apiSuccess(email, { durationMs: Date.now() - startTime });
+    if (!quotaResult.success) {
+      return apiError(
+        `AI credit limit reached (${quotaResult.current}/${quotaResult.limit}). Please upgrade your workspace tier.`,
+        403,
+        "QUOTA_EXCEEDED"
+      );
+    }
+
+    return apiSuccess(quotaResult.result, { durationMs: Date.now() - startTime });
   } catch (error: any) {
     console.error("AI email generation error:", error);
     return apiError("Failed to generate email", 500, "AI_EMAIL_ERROR", error.message);
