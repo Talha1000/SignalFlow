@@ -38,36 +38,44 @@ export default async function ContactsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 light:divide-black/10">
-              {contacts.map((c: any) => (
-                <tr key={c.id} className="hover:bg-white/5 light:hover:bg-black/5 transition-colors">
-                  <td className="p-4 font-bold text-white light:text-[#121212]">
-                    {c.firstName ? `${c.firstName} ${c.lastName || ""}` : (c.name || "Contact")}
-                  </td>
-                  <td className="p-4 text-slate-300 light:text-[#4a5053]">{c.title || "Decision Maker"}</td>
-                  <td className="p-4">
-                    <Link
-                      href={c.company ? `/app/companies/${c.company.id || c.companyId}` : "#"}
-                      className="font-semibold text-[#38b6ff] light:text-[#0284c7] hover:underline"
-                    >
-                      {c.company?.name || "Direct"}
-                    </Link>
-                  </td>
-                  <td className="p-4 font-mono text-slate-400 light:text-[#787e82]">{c.email}</td>
-                  <td className="p-4 text-slate-400 light:text-[#787e82]">{c.department || "Operations"}</td>
-                  <td className="p-4 text-right">
-                    {c.leads && c.leads.length > 0 ? (
-                      <Link
-                        href={`/app/leads/${c.leads[0].id}`}
-                        className="text-[#38b6ff] light:text-[#0284c7] font-semibold hover:underline text-xs"
-                      >
-                        View Lead (Score: {c.leads[0].score}) →
-                      </Link>
-                    ) : (
-                      <span className="text-slate-500">—</span>
-                    )}
+              {contacts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-400">
+                    No contacts found in this workspace. Contacts are mapped automatically when leads or signals arrive.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                contacts.map((c: any) => (
+                  <tr key={c.id} className="hover:bg-white/5 light:hover:bg-black/5 transition-colors">
+                    <td className="p-4 font-bold text-white light:text-[#121212]">
+                      {c.firstName ? `${c.firstName} ${c.lastName || ""}` : (c.name || "Contact")}
+                    </td>
+                    <td className="p-4 text-slate-300 light:text-[#4a5053]">{c.title || "Decision Maker"}</td>
+                    <td className="p-4">
+                      <Link
+                        href={c.company ? `/app/companies/${c.company.id || c.companyId}` : "#"}
+                        className="font-semibold text-[#38b6ff] light:text-[#0284c7] hover:underline"
+                      >
+                        {c.company?.name || "Direct"}
+                      </Link>
+                    </td>
+                    <td className="p-4 font-mono text-slate-400 light:text-[#787e82]">{c.email}</td>
+                    <td className="p-4 text-slate-400 light:text-[#787e82]">{c.department || "Operations"}</td>
+                    <td className="p-4 text-right">
+                      {c.leads && c.leads.length > 0 ? (
+                        <Link
+                          href={`/app/leads/${c.leads[0].id}`}
+                          className="text-[#38b6ff] light:text-[#0284c7] font-semibold hover:underline text-xs"
+                        >
+                          View Lead (Score: {c.leads[0].score}) →
+                        </Link>
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

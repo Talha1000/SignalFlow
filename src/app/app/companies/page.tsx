@@ -2,15 +2,15 @@ import React from "react";
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { getCompaniesSafe } from "@/lib/mockData";
-import { Building, Users, ArrowRight } from "lucide-react";
+import { Building, Users, ArrowRight, Plus } from "lucide-react";
 import { ScoreBadge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 export const dynamic = "force-dynamic";
 
 export default async function CompaniesPage() {
   const session = await getSession();
   const companies = await getCompaniesSafe(session?.workspaceId);
-
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -26,69 +26,91 @@ export default async function CompaniesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {companies.map((comp: any) => {
-          const totalPipeline = (comp.leads || []).reduce((sum: number, l: any) => sum + (l.dealValue || 0), 0);
+      {companies.length === 0 ? (
+        <div className="p-12 text-center rounded-3xl border border-dashed border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] space-y-4">
+          <Building className="h-8 w-8 text-[#38b6ff] light:text-[#0284c7] mx-auto opacity-70" />
+          <div>
+            <h3 className="font-bold text-white light:text-[#121212] text-sm">No accounts found</h3>
+            <p className="text-xs text-slate-400 light:text-[#787e82] mt-1 max-w-md mx-auto">
+              Accounts will appear here automatically when leads are ingested via API, signals, or CSV upload.
+            </p>
+          </div>
+          <Link href="/app/onboarding">
+            <Button variant="pill" size="sm">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Import Leads
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {companies.map((comp: any) => {
+            const totalPipeline = (comp.leads || []).reduce((sum: number, l: any) => sum + (l.dealValue || 0), 0);
+            const compScore = comp.intentScore ?? (comp.leads && comp.leads.length > 0
+              ? Math.round(comp.leads.reduce((s: number, l: any) => s + (l.score || 0), 0) / comp.leads.length)
+              : 0);
 
-          return (
-            <div
-              key={comp.id}
-              className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 space-y-4 hover:border-[#38b6ff]/30 light:hover:border-[#0284c7]/30 transition-all flex flex-col justify-between shadow-sm"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <Link
-                      href={`/app/companies/${comp.id}`}
-                      className="text-base font-bold text-white light:text-[#121212] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"
-                    >
-                      {comp.name}
-                    </Link>
-                    <div className="text-xs text-slate-400 light:text-[#787e82] font-mono mt-0.5">{comp.domain}</div>
+            return (
+              <div
+                key={comp.id}
+                className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-5 space-y-4 hover:border-[#38b6ff]/30 light:hover:border-[#0284c7]/30 transition-all flex flex-col justify-between shadow-sm"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <Link
+                        href={`/app/companies/${comp.id}`}
+                        className="text-base font-bold text-white light:text-[#121212] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"
+                      >
+                        {comp.name}
+                      </Link>
+                      <div className="text-xs text-slate-400 light:text-[#787e82] font-mono mt-0.5">{comp.domain}</div>
+                    </div>
+                    <ScoreBadge score={compScore} />
                   </div>
-                  <ScoreBadge score={comp.intentScore || 85} />
+
+                  <div className="text-xs text-slate-300 light:text-[#4a5053] space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 light:text-[#787e82]">Industry:</span>
+                      <span className="font-medium text-white light:text-[#121212]">{comp.industry || "B2B Tech"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 light:text-[#787e82]">Scale:</span>
+                      <span className="font-medium text-white light:text-[#121212]">
+                        {comp.size || comp.employeeCount ? `${comp.size || comp.employeeCount} employees` : "Not specified"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 light:text-[#787e82]">Pipeline Value:</span>
+                      <span className="font-mono text-emerald-400 light:text-emerald-700 font-semibold">
+                        ${totalPipeline.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {comp.aiSummary && (
+                    <p className="text-[11px] text-slate-300 light:text-[#4a5053] leading-relaxed bg-[#252a2b] light:bg-[#f0f2f3] p-3 rounded-2xl border border-white/10 light:border-black/10">
+                      "{comp.aiSummary}"
+                    </p>
+                  )}
                 </div>
 
-                <div className="text-xs text-slate-300 light:text-[#4a5053] space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 light:text-[#787e82]">Industry:</span>
-                    <span className="font-medium text-white light:text-[#121212]">{comp.industry || "B2B Tech"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 light:text-[#787e82]">Scale:</span>
-                    <span className="font-medium text-white light:text-[#121212]">{comp.size || comp.employeeCount || "100-250"} employees</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 light:text-[#787e82]">Pipeline Value:</span>
-                    <span className="font-mono text-emerald-400 light:text-emerald-700 font-semibold">
-                      ${totalPipeline.toLocaleString()}
-                    </span>
-                  </div>
+                <div className="pt-3 border-t border-white/10 light:border-black/10 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 light:text-[#787e82] flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
+                    {(comp.contacts || []).length} active contacts
+                  </span>
+                  <Link
+                    href={`/app/companies/${comp.id}`}
+                    className="text-[#38b6ff] light:text-[#0284c7] hover:underline font-medium flex items-center gap-1"
+                  >
+                    View Account <ArrowRight className="h-3 w-3" />
+                  </Link>
                 </div>
-
-                {comp.aiSummary && (
-                  <p className="text-[11px] text-slate-300 light:text-[#4a5053] leading-relaxed bg-[#252a2b] light:bg-[#f0f2f3] p-3 rounded-2xl border border-white/10 light:border-black/10">
-                    "{comp.aiSummary}"
-                  </p>
-                )}
               </div>
-
-              <div className="pt-3 border-t border-white/10 light:border-black/10 flex items-center justify-between text-xs">
-                <span className="text-slate-400 light:text-[#787e82] flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
-                  {(comp.contacts || []).length} active contacts
-                </span>
-                <Link
-                  href={`/app/companies/${comp.id}`}
-                  className="text-[#38b6ff] light:text-[#0284c7] hover:underline font-medium flex items-center gap-1"
-                >
-                  View Account <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

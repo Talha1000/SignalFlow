@@ -30,6 +30,8 @@ export const PERMISSIONS = {
   USE_COPILOT: (r: Role) => hasRoleAtLeast(r, Role.SALES_REP),
 
   // Settings & Admin
+  VIEW_SETTINGS: (r: Role) => hasRoleAtLeast(r, Role.VIEWER),
+  VIEW_TEAM: (r: Role) => hasRoleAtLeast(r, Role.VIEWER),
   MANAGE_WORKSPACE: (r: Role) => hasRoleAtLeast(r, Role.ADMIN),
   MANAGE_TEAM: (r: Role) => hasRoleAtLeast(r, Role.ADMIN),
   MANAGE_API_KEYS: (r: Role) => hasRoleAtLeast(r, Role.ADMIN),

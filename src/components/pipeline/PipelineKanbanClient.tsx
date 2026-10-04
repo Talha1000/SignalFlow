@@ -6,6 +6,7 @@ import {
   Trello,
   ArrowRight,
   ArrowLeft,
+  AlertCircle,
 } from "lucide-react";
 import { IntentBadge, ScoreBadge } from "@/components/ui/Badge";
 
@@ -34,6 +35,7 @@ const STAGES = [
 
 export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineLead[] }) {
   const [leads, setLeads] = useState(initialLeads);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const moveStage = async (leadId: string, currentStage: string, direction: 1 | -1) => {
     const currentIndex = STAGES.findIndex((s) => s.key === currentStage);
@@ -41,6 +43,7 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
     if (newIndex < 0 || newIndex >= STAGES.length) return;
 
     const nextStage = STAGES[newIndex].key;
+    setErrorMsg(null);
 
     // Optimistic UI update
     setLeads((prev) =>
@@ -48,13 +51,22 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
     );
 
     try {
-      await fetch(`/api/v1/leads/${leadId}`, {
+      const res = await fetch(`/api/v1/leads/${leadId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage: nextStage }),
       });
-    } catch (err) {
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error?.message || "Failed to update pipeline stage");
+      }
+    } catch (err: any) {
       console.error("Failed to update stage:", err);
+      // Roll back optimistic update
+      setLeads((prev) =>
+        prev.map((l) => (l.id === leadId ? { ...l, stage: currentStage } : l))
+      );
+      setErrorMsg(err.message || "Failed to update pipeline stage. Reverted.");
     }
   };
 
@@ -62,6 +74,12 @@ export function PipelineKanbanClient({ initialLeads }: { initialLeads: PipelineL
 
   return (
     <div className="space-y-6 max-w-full">
+      {errorMsg && (
+        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {errorMsg}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">

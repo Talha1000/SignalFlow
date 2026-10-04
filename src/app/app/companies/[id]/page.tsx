@@ -175,7 +175,7 @@ export default async function CompanyDetailPage({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400 light:text-[#787e82]">Revenue:</span>
-                <span className="font-mono text-emerald-500 light:text-emerald-600 font-semibold">{(company as any).annualRevenue || "$50M+"}</span>
+                <span className="font-mono text-emerald-500 light:text-emerald-600 font-semibold">{(company as any).annualRevenue || "Not specified"}</span>
               </div>
             </div>
           </div>
@@ -184,16 +184,20 @@ export default async function CompanyDetailPage({
             <h4 className="font-bold text-white light:text-[#121212] uppercase tracking-wider text-[11px]">
               Detected Tech Stack
             </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {((company as any).techStack || []).map((t: string) => (
-                <span
-                  key={t}
-                  className="px-2.5 py-0.5 rounded-full bg-[#252a2b] light:bg-[#f0f2f3] text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10 font-mono text-xs font-medium"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
+            {((company as any).techStack || []).length === 0 ? (
+              <span className="text-xs text-slate-400 light:text-[#787e82]">No technologies detected yet</span>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {((company as any).techStack || []).map((t: string) => (
+                  <span
+                    key={t}
+                    className="px-2.5 py-0.5 rounded-full bg-[#252a2b] light:bg-[#f0f2f3] text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10 font-mono text-xs font-medium"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

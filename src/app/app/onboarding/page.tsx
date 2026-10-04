@@ -96,10 +96,31 @@ export default function OnboardingPage() {
   // Step 7 state: Cadence
   const [cadenceName, setCadenceName] = useState("Tier-1 Inbound Buying Surge Sequence");
 
-  const handleNext = () => {
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
+      setIsFinalizing(true);
+      try {
+        await fetch("/api/v1/onboarding/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workspaceName,
+            workspaceDomain,
+            hotThreshold,
+            leads: csvData,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to complete onboarding:", err);
+      } finally {
+        setIsFinalizing(false);
+      }
+
       // Trigger celebration confetti
       try {
         confetti({
@@ -116,12 +137,45 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleSimulateCSVUpload = () => {
-    setImportProgress(25);
-    setTimeout(() => setImportProgress(65), 400);
-    setTimeout(() => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportProgress(20);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length > 1) {
+        const rows: CSVRow[] = [];
+        for (let i = 1; i < lines.length && rows.length < 50; i++) {
+          const cols = lines[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+          if (cols.length >= 3) {
+            rows.push({
+              first_name: cols[0] || "Prospect",
+              last_name: cols[1] || "",
+              email: cols[2] || "prospect@domain.com",
+              company: cols[3] || "Company Inc",
+              job_title: cols[4] || "Lead",
+              industry: cols[5] || "Software",
+            });
+          }
+        }
+        if (rows.length > 0) {
+          setCsvData(rows);
+        }
+      }
       setImportProgress(100);
-    }, 800);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSimulateCSVUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   return (
@@ -280,6 +334,13 @@ export default function OnboardingPage() {
               </div>
 
               {/* Upload Dropzone */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".csv"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
               <div
                 onClick={handleSimulateCSVUpload}
                 className="border-2 border-dashed border-white/20 light:border-black/20 hover:border-[#38b6ff]/50 light:hover:border-[#0284c7]/50 rounded-2xl p-6 text-center cursor-pointer bg-[#252a2b]/50 light:bg-[#f0f2f3]/50 transition-colors"

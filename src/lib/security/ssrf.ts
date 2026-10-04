@@ -308,3 +308,25 @@ export async function isSafePublicWebhookUrlAsync(urlString: string): Promise<bo
     return false;
   }
 }
+
+/**
+ * Validates a webhook URL and returns an object indicating validity and rejection reason.
+ */
+export async function validateWebhookUrlAsync(urlString: string): Promise<{ valid: boolean; reason?: string }> {
+  if (!isSafePublicWebhookUrl(urlString)) {
+    return {
+      valid: false,
+      reason: "URL must be a valid public HTTPS endpoint without internal credentials or non-standard ports",
+    };
+  }
+
+  const isSafe = await isSafePublicWebhookUrlAsync(urlString);
+  if (!isSafe) {
+    return {
+      valid: false,
+      reason: "Hostname resolved to private network, loopback, or cloud metadata address space",
+    };
+  }
+
+  return { valid: true };
+}
