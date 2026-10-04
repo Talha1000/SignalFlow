@@ -68,67 +68,75 @@ export function LeadDetailClient({
     "LOST",
   ];
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
+  const [enrollmentSuccess, setEnrollmentSuccess] = useState<string | null>(null);
+
   const handleStageChange = async (newStage: string) => {
+    setActionError(null);
     try {
       const res = await fetch(`/api/v1/leads/${lead.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage: newStage }),
       });
-      if (res.ok) {
-        setLead({ ...lead, stage: newStage });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error?.message || "Failed to update pipeline stage");
       }
-    } catch {
       setLead({ ...lead, stage: newStage });
+    } catch (err: any) {
+      setActionError(err.message || "Failed to update stage");
     }
   };
 
   const handleSaveNote = async () => {
     if (!newNote.trim()) return;
-    const newActivity = {
-      id: `act-${Date.now()}`,
-      type: "NOTE",
-      title: "Rep Note Added",
-      description: newNote,
-      createdAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
+    setActionError(null);
     try {
-      await fetch("/api/v1/activities", {
+      const res = await fetch("/api/v1/activities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           leadId: lead.id,
           type: "NOTE",
           title: "Rep Note Added",
-          description: newNote,
+          description: newNote.trim(),
         }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error?.message || "Failed to save note");
+      }
+      const json = await res.json();
+      const savedActivity = json.data || {
+        id: `act-${Date.now()}`,
+        type: "NOTE",
+        title: "Rep Note Added",
+        description: newNote.trim(),
+        createdAt: new Date().toISOString(),
+      };
       setLead({
         ...lead,
-        activities: [newActivity, ...(lead.activities || [])],
+        activities: [savedActivity, ...(lead.activities || [])],
       });
       setNewNote("");
       setNoteModalOpen(false);
-    } catch {
-      setLead({
-        ...lead,
-        activities: [newActivity, ...(lead.activities || [])],
-      });
-      setNewNote("");
-      setNoteModalOpen(false);
+    } catch (err: any) {
+      setActionError(err.message || "Could not persist note to backend.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleLogCall = async () => {
-    const callAct = {
-      id: `act-${Date.now()}`,
-      type: "CALL",
-      title: `Call: ${callOutcome}`,
-      description: `Outbound sales call logged. Status: ${callOutcome}`,
-      createdAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
+    setActionError(null);
     try {
-      await fetch("/api/v1/activities", {
+      const res = await fetch("/api/v1/activities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,27 +146,43 @@ export function LeadDetailClient({
           description: `Outbound sales call logged. Status: ${callOutcome}`,
         }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error?.message || "Failed to log call");
+      }
+      const json = await res.json();
+      const savedActivity = json.data || {
+        id: `act-${Date.now()}`,
+        type: "CALL",
+        title: `Call: ${callOutcome}`,
+        description: `Outbound sales call logged. Status: ${callOutcome}`,
+        createdAt: new Date().toISOString(),
+      };
       setLead({
         ...lead,
-        activities: [callAct, ...(lead.activities || [])],
+        activities: [savedActivity, ...(lead.activities || [])],
       });
       setCallModalOpen(false);
-    } catch {
-      setLead({
-        ...lead,
-        activities: [callAct, ...(lead.activities || [])],
-      });
-      setCallModalOpen(false);
+    } catch (err: any) {
+      setActionError(err.message || "Could not persist call log to backend.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleAssignOwner = async () => {
+    setIsSubmitting(true);
+    setActionError(null);
     try {
-      await fetch(`/api/v1/leads/${lead.id}`, {
+      const res = await fetch(`/api/v1/leads/${lead.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ownerId: selectedOwner || null }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error?.message || "Failed to reassign owner");
+      }
       const member = teamMembers.find((m) => m.id === selectedOwner);
       setLead({
         ...lead,
@@ -166,8 +190,56 @@ export function LeadDetailClient({
         owner: member ? { name: member.name, email: member.email } : null,
       });
       setAssignModalOpen(false);
-    } catch {
-      setAssignModalOpen(false);
+    } catch (err: any) {
+      setActionError(err.message || "Failed to assign lead owner.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEnrollSequence = async () => {
+    if (!selectedSeq) return;
+    setIsEnrolling(true);
+    setEnrollmentError(null);
+    setEnrollmentSuccess(null);
+    try {
+      const res = await fetch("/api/v1/sequences/enroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sequenceId: selectedSeq,
+          leadId: lead.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error?.message || "Failed to enroll lead in cadence");
+      }
+      const seqName = data?.data?.sequenceName || "Cadence";
+      const newActivity = {
+        id: `act-${Date.now()}`,
+        type: "CADENCE_ENROLLED",
+        title: `Enrolled in Cadence: ${seqName}`,
+        description: "Outbound cadence initiated. Auto-pause configured upon prospect response.",
+        createdAt: new Date().toISOString(),
+      };
+      setLead({
+        ...lead,
+        activities: [newActivity, ...(lead.activities || [])],
+        enrollments: [
+          ...(lead.enrollments || []),
+          data.data.enrollment || { sequence: { name: seqName }, status: "ACTIVE" },
+        ],
+      });
+      setEnrollmentSuccess(`Successfully enrolled in ${seqName}!`);
+      setTimeout(() => {
+        setSeqModalOpen(false);
+        setEnrollmentSuccess(null);
+      }, 1000);
+    } catch (err: any) {
+      setEnrollmentError(err.message || "Failed to enroll lead in cadence.");
+    } finally {
+      setIsEnrolling(false);
     }
   };
 
@@ -186,6 +258,13 @@ export function LeadDetailClient({
           <ArrowLeft className="h-3.5 w-3.5" /> Back to Priority Leads
         </Link>
       </div>
+
+      {actionError && (
+        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="text-slate-400 hover:text-white ml-2">×</button>
+        </div>
+      )}
 
       {/* Main Header Card */}
       <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 sm:p-8 shadow-sm space-y-6">
@@ -900,22 +979,30 @@ export function LeadDetailClient({
               ))}
             </select>
           </div>
+          {enrollmentError && (
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+              {enrollmentError}
+            </div>
+          )}
+          {enrollmentSuccess && (
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+              {enrollmentSuccess}
+            </div>
+          )}
           <p className="text-[11px] text-slate-400 light:text-[#787e82]">
             Enrolling will schedule Day 0 outreach and automatically pause on prospect reply.
           </p>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setSeqModalOpen(false)}>
+            <Button variant="ghost" size="sm" onClick={() => setSeqModalOpen(false)} disabled={isEnrolling}>
               Cancel
             </Button>
             <Button
               variant="pill"
               size="sm"
-              onClick={() => {
-                setSeqModalOpen(false);
-                alert("Lead successfully enrolled in cadence!");
-              }}
+              onClick={handleEnrollSequence}
+              disabled={isEnrolling || !selectedSeq}
             >
-              Confirm Enrollment
+              {isEnrolling ? "Enrolling..." : "Confirm Enrollment"}
             </Button>
           </div>
         </div>

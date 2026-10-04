@@ -535,6 +535,39 @@ async function runTestSuite() {
     const signalsRouteFile = fs.readFileSync("src/app/api/v1/signals/route.ts", "utf-8");
     assert(signalsRouteFile.includes('SELECT id FROM "Company" WHERE id =') && signalsRouteFile.includes("FOR UPDATE"), "Signal scoring applies row lock on Company to serialize concurrent scoring calculations");
 
+    // 24. Truthful Providers & CRM Ingestion Verification
+    console.log("\n--- 24. TRUTHFUL PROVIDERS & CRM AUDITABILITY ---");
+    const { emailProvider } = await import("../src/lib/email/provider");
+    assert(typeof emailProvider.send === "function", "EmailProvider interface exports send()");
+    assert(typeof emailProvider.isConfigured === "function", "EmailProvider interface exports isConfigured()");
+    
+    // In unconfigured state (no RESEND_API_KEY in test environment)
+    if (!process.env.RESEND_API_KEY) {
+      assert(!emailProvider.isConfigured(), "Email provider truthfully reports isConfigured() === false when RESEND_API_KEY unset");
+      const unconfiguredSendResult = await emailProvider.send({
+        to: "test@example.com",
+        subject: "Test",
+        body: "Hello",
+      });
+      assert(!unconfiguredSendResult.success, "Unconfigured email provider fails closed and never reports fake success");
+    }
+
+    const { aiService } = await import("../src/lib/ai/provider");
+    const testReply = await aiService.generateInboxReply({
+      sender: "Test User",
+      company: "Acme Tech",
+      subject: "Meeting inquiry",
+      history: [{ sender: "prospect", text: "Are you free Thursday?" }],
+      sentiment: "MEETING_REQUESTED",
+    });
+    assert(typeof testReply.reply === "string" && testReply.reply.length > 0, "aiService.generateInboxReply produces contextual response");
+    assert(["ai", "template"].includes(testReply.source), `aiService truthfully tags source attribute (${testReply.source})`);
+
+    const hasEmailActivity = Object.values(ActivityType).includes("EMAIL_SENT" as any);
+    const hasCadenceActivity = Object.values(ActivityType).includes("CADENCE_ENROLLED" as any);
+    assert(hasEmailActivity, "Prisma ActivityType enum contains EMAIL_SENT");
+    assert(hasCadenceActivity, "Prisma ActivityType enum contains CADENCE_ENROLLED");
+
     console.log("\n=================================================");
     console.log(`SUMMARY: ${passes} PASSED, ${fails} FAILED`);
     console.log("=================================================");

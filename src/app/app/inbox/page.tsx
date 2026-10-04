@@ -110,52 +110,149 @@ export default function InboxPage() {
   const [selectedThread, setSelectedThread] = useState<Thread>(mockThreads[0]);
   const [replyText, setReplyText] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [actionNotice, setActionNotice] = useState<{ type: "success" | "warning" | "error"; message: string } | null>(null);
 
-  const handleGenerateAiReply = () => {
+  const handleGenerateAiReply = async () => {
     setIsDrafting(true);
-    setTimeout(() => {
+    setActionNotice(null);
+    try {
+      const res = await fetch("/api/v1/ai/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sender: selectedThread.sender,
+          company: selectedThread.company,
+          subject: selectedThread.subject,
+          sentiment: selectedThread.sentiment,
+          leadScore: selectedThread.score,
+          history: selectedThread.history.map((h) => ({
+            sender: h.sender,
+            text: h.text,
+          })),
+        }),
+      });
+
+      const resJson = await res.json();
+      const payload = resJson.data || resJson;
+
+      if (payload.reply) {
+        setReplyText(payload.reply);
+      } else if (resJson.error) {
+        setActionNotice({ type: "error", message: resJson.error });
+      }
+    } catch (err: any) {
+      // Local fallback in case of offline/network failure
       if (selectedThread.sentiment === "MEETING_REQUESTED") {
         setReplyText(
-          `Hi ${selectedThread.sender.split(" ")[0]},\n\nThursday at 2 PM PST works perfectly for me. I've sent a calendar invite with the Zoom link.\n\nLooking forward to walking through the architecture.\n\nBest,\nLiam Vance`
-        );
-      } else if (selectedThread.sentiment === "TECHNICAL_INQUIRY") {
-        setReplyText(
-          `Hi ${selectedThread.sender.split(" ")[0]},\n\nAttached is our latest SOC2 Type II compliance audit packet. And yes, all SignalFlow webhooks are cryptographically signed using HMAC SHA-256 with workspace secret rotation.\n\nHappy to walk your security team through the details.\n\nBest,\nMaya Patel`
+          `Hi ${selectedThread.sender.split(" ")[0]},\n\nThursday at 2 PM PST works well for me. I will prepare an architecture briefing focused on your team's evaluation.\n\nBest regards,\nSignalFlow Sales Team`
         );
       } else {
         setReplyText(
-          `Hi ${selectedThread.sender.split(" ")[0]},\n\nUnderstood on the November timeline. We offer free parallel staging so you can test SignalFlow in sandbox mode with zero migration risk until your current renewal.\n\nBest,\nLiam`
+          `Hi ${selectedThread.sender.split(" ")[0]},\n\nThank you for reaching out. Happy to share more details on our technical benchmarks.\n\nBest regards,\nSignalFlow Sales Team`
         );
       }
+    } finally {
       setIsDrafting(false);
-    }, 600);
+    }
   };
 
-  const handleSendReply = () => {
+  const handleSendReply = async () => {
     if (!replyText.trim()) return;
-    const newEntry = {
-      sender: "rep" as const,
-      text: replyText,
-      time: "Just now",
-    };
-    setSelectedThread((prev) => ({
-      ...prev,
-      history: [...prev.history, newEntry],
-    }));
-    setReplyText("");
+    setIsSending(true);
+    setActionNotice(null);
+
+    try {
+      const res = await fetch("/api/v1/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: `${selectedThread.sender.toLowerCase().replace(/\s+/g, ".")}@${selectedThread.company.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+          subject: selectedThread.subject,
+          body: replyText,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 503 || data.code === "PROVIDER_NOT_CONFIGURED") {
+          setActionNotice({
+            type: "warning",
+            message: "Email provider not configured (RESEND_API_KEY). Reply recorded locally in thread.",
+          });
+        } else {
+          setActionNotice({
+            type: "error",
+            message: data.error || "Failed to send email. Check quota or connection.",
+          });
+          setIsSending(false);
+          return;
+        }
+      } else {
+        setActionNotice({
+          type: "success",
+          message: "Email reply delivered and logged to timeline.",
+        });
+      }
+
+      // Append reply to conversation thread history
+      const newEntry = {
+        sender: "rep" as const,
+        text: replyText,
+        time: "Just now",
+      };
+      setSelectedThread((prev) => ({
+        ...prev,
+        history: [...prev.history, newEntry],
+      }));
+      setReplyText("");
+    } catch (err: any) {
+      setActionNotice({
+        type: "error",
+        message: err.message || "Network error while sending reply.",
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
-          <Inbox className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
-          Conversations & Reply Inbox
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-white light:text-[#121212] flex items-center gap-2">
+            <Inbox className="h-6 w-6 text-[#38b6ff] light:text-[#0284c7]" />
+            Conversations & Reply Inbox
+          </h1>
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 light:text-amber-700">
+            Preview Threads (Connect IMAP / Inbound Webhook for Live Mailbox)
+          </span>
+        </div>
         <p className="text-xs text-slate-400 light:text-[#787e82] mt-0.5">
-          Prospect replies automatically halt outgoing sequences and classify buyer intent.
+          Prospect replies automatically halt outgoing sequences and classify buyer intent. Outbound replies use your configured email provider.
         </p>
       </div>
+
+      {actionNotice && (
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center justify-between border ${
+            actionNotice.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300 light:text-emerald-700"
+              : actionNotice.type === "warning"
+              ? "bg-amber-500/10 border-amber-500/20 text-amber-300 light:text-amber-800"
+              : "bg-rose-500/10 border-rose-500/20 text-rose-300 light:text-rose-700"
+          }`}
+        >
+          <span>{actionNotice.message}</span>
+          <button
+            onClick={() => setActionNotice(null)}
+            className="text-[10px] font-bold opacity-75 hover:opacity-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-0 shadow-sm">
         {/* Left Column: Thread List */}
@@ -274,7 +371,8 @@ export default function InboxPage() {
                 variant="pill"
                 size="sm"
                 onClick={handleSendReply}
-                disabled={!replyText.trim()}
+                disabled={!replyText.trim() || isSending}
+                loading={isSending}
                 className="gap-1.5 text-xs shadow-md"
               >
                 Send Reply <Send className="h-3.5 w-3.5" />

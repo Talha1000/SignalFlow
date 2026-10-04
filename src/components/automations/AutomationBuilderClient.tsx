@@ -84,10 +84,21 @@ const defaultNodes: WorkflowNode[] = [
 ];
 
 export function AutomationBuilderClient({ initialAutomations }: { initialAutomations: any[] }) {
-  const [nodes, setNodes] = useState<WorkflowNode[]>(defaultNodes);
+  const primaryAuto = initialAutomations && initialAutomations.length > 0 ? initialAutomations[0] : null;
+
+  const initialNodesList =
+    primaryAuto?.nodes && Array.isArray(primaryAuto.nodes) && primaryAuto.nodes.length > 0
+      ? primaryAuto.nodes
+      : defaultNodes;
+
+  const [nodes, setNodes] = useState<WorkflowNode[]>(initialNodesList);
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(nodes[0]);
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(primaryAuto?.status ? primaryAuto.status === "ACTIVE" : true);
   const [activeTab, setActiveTab] = useState<"builder" | "executions">("builder");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const executionsList = primaryAuto?.executions || [];
 
   const getNodeIcon = (type: string) => {
     switch (type) {
@@ -112,8 +123,55 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
       description: "Custom workflow step configured by user",
       data: {},
     };
-    setNodes([...nodes, newNode]);
+    const updated = [...nodes, newNode];
+    setNodes(updated);
     setSelectedNode(newNode);
+  };
+
+  const handleSaveWorkflow = async () => {
+    setIsSaving(true);
+    setSaveStatus(null);
+    try {
+      const res = await fetch("/api/v1/automations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: primaryAuto?.id || "auto-1",
+          name: primaryAuto?.name || "Hot Lead Routing Workflow",
+          status: isActive ? "ACTIVE" : "PAUSED",
+          nodes,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to persist workflow.");
+      }
+
+      setSaveStatus({ type: "success", message: "Workflow nodes and rules saved to workspace database." });
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch (err: any) {
+      setSaveStatus({ type: "error", message: err.message || "Failed to save workflow." });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleActive = async () => {
+    const nextState = !isActive;
+    setIsActive(nextState);
+    try {
+      await fetch("/api/v1/automations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: primaryAuto?.id || "auto-1",
+          status: nextState ? "ACTIVE" : "PAUSED",
+        }),
+      });
+    } catch (err) {
+      console.warn("Failed to persist active status:", err);
+    }
   };
 
   return (
@@ -134,7 +192,7 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
           <div className="flex items-center gap-2 text-xs">
             <span className="text-slate-400 light:text-[#787e82]">Workflow Status:</span>
             <button
-              onClick={() => setIsActive(!isActive)}
+              onClick={handleToggleActive}
               className={`px-3 py-1 rounded-full text-xs font-mono font-bold border transition-all ${
                 isActive
                   ? "bg-emerald-500/15 text-emerald-500 light:text-emerald-600 border-emerald-500/30"
@@ -151,10 +209,25 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
             onClick={() => setActiveTab(activeTab === "builder" ? "executions" : "builder")}
             className="text-xs"
           >
-            {activeTab === "builder" ? "View Run Logs (47)" : "Back to Canvas"}
+            {activeTab === "builder" ? `View Run Logs (${executionsList.length})` : "Back to Canvas"}
           </Button>
         </div>
       </div>
+
+      {saveStatus && (
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center justify-between border ${
+            saveStatus.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300 light:text-emerald-700"
+              : "bg-rose-500/10 border-rose-500/20 text-rose-300 light:text-rose-700"
+          }`}
+        >
+          <span>{saveStatus.message}</span>
+          <button onClick={() => setSaveStatus(null)} className="text-[10px] font-bold opacity-75">
+            ✕
+          </button>
+        </div>
+      )}
 
       {activeTab === "builder" ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -276,9 +349,10 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
                   variant="pill"
                   size="sm"
                   className="w-full justify-center"
-                  onClick={() => alert("Node parameters updated successfully!")}
+                  loading={isSaving}
+                  onClick={handleSaveWorkflow}
                 >
-                  Save Node Configuration
+                  Save Workflow Configuration
                 </Button>
               </div>
             ) : (
@@ -292,27 +366,38 @@ export function AutomationBuilderClient({ initialAutomations }: { initialAutomat
         /* Execution Runs Log */
         <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-6 shadow-sm space-y-4">
           <h3 className="text-base font-bold text-white light:text-[#121212]">Recent Automation Executions</h3>
-          <div className="divide-y divide-white/10 light:divide-black/10 text-xs">
-            {[
-              { lead: "Sarah Chen (Acme Tech)", trigger: "Score 91 reached", time: "10m ago", status: "SUCCESS" },
-              { lead: "Marcus Vance (ApexCloud)", trigger: "Demo page visited", time: "42m ago", status: "SUCCESS" },
-              { lead: "Victor Stone (SecurityZero)", trigger: "API specs evaluated", time: "1h ago", status: "SUCCESS" },
-              { lead: "Kieran O'Connor (HyperScale)", trigger: "Score 89 reached", time: "3h ago", status: "SUCCESS" },
-            ].map((run, i) => (
-              <div key={i} className="py-3.5 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-white light:text-[#121212]">{run.lead}</div>
-                  <div className="text-[11px] text-slate-400 light:text-[#787e82]">{run.trigger}</div>
+          {executionsList.length === 0 ? (
+            <div className="py-12 text-center space-y-3">
+              <Zap className="h-8 w-8 mx-auto text-slate-500 opacity-60" />
+              <h4 className="text-xs font-semibold text-slate-300 light:text-[#4a5053]">No executions recorded yet</h4>
+              <p className="text-[11px] text-slate-500 light:text-[#787e82]">
+                Automations trigger when prospect scores cross configured thresholds or behavioral signals match your rules.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-white/10 light:divide-black/10 text-xs">
+              {executionsList.map((run: any, i: number) => (
+                <div key={run.id || i} className="py-3.5 flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-white light:text-[#121212]">
+                      {run.lead?.company?.name || run.lead?.contact?.firstName ? `${run.lead?.contact?.firstName || ""} (${run.lead?.company?.name || "Account"})` : `Lead ${run.leadId || "Automation Step"}`}
+                    </div>
+                    <div className="text-[11px] text-slate-400 light:text-[#787e82]">
+                      {run.details?.action || run.details?.reason || "Workflow rule triggered"}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono text-emerald-500 font-bold text-[10px]">
+                      ✔ {run.status || "SUCCESS"}
+                    </span>
+                    <div className="text-[10px] text-slate-400 light:text-[#787e82]">
+                      {new Date(run.triggeredAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="font-mono text-emerald-500 font-bold text-[10px]">
-                    ✔ {run.status}
-                  </span>
-                  <div className="text-[10px] text-slate-400 light:text-[#787e82]">{run.time}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

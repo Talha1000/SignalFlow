@@ -1,50 +1,44 @@
 import React from "react";
 import { Megaphone, TrendingUp, Target, DollarSign, ArrowRight } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { getLeadsSafe } from "@/lib/mockData";
 import { Button } from "@/components/ui/Button";
 
-export default function CampaignsPage() {
-  const campaigns = [
-    {
-      id: "camp-1",
-      name: "Q3 Enterprise Infra Whitepaper",
-      type: "Content Download",
-      leads: 28,
-      qualified: 12,
-      avgScore: 78,
-      pipeline: 145000,
+export const dynamic = "force-dynamic";
+
+export default async function CampaignsPage() {
+  const session = await getSession();
+  const leads = await getLeadsSafe(session?.workspaceId);
+
+  // Aggregate real workspace leads by acquisition source
+  const sourceGroups: Record<string, typeof leads> = {};
+  leads.forEach((l: any) => {
+    const src = l.source || "WEBSITE";
+    if (!sourceGroups[src]) sourceGroups[src] = [];
+    sourceGroups[src].push(l);
+  });
+
+  const campaigns = Object.entries(sourceGroups).map(([sourceKey, srcLeads], idx) => {
+    const totalPipeline = srcLeads.reduce((sum, l) => sum + (l.dealValue || 0), 0);
+    const avgScore = srcLeads.length > 0 ? Math.round(srcLeads.reduce((sum, l) => sum + l.score, 0) / srcLeads.length) : 0;
+    const qualifiedCount = srcLeads.filter((l) => l.score >= 70).length;
+
+    const formattedName = sourceKey
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+    return {
+      id: `camp-${idx + 1}`,
+      name: `${formattedName} Inbound Channel`,
+      type: sourceKey.includes("OUTBOUND") ? "Outbound Cadence" : "Inbound Telemetry",
+      leads: srcLeads.length,
+      qualified: qualifiedCount,
+      avgScore,
+      pipeline: totalPipeline,
       status: "ACTIVE",
-    },
-    {
-      id: "camp-2",
-      name: "Google High-Intent Search Ads",
-      type: "Paid Search",
-      leads: 34,
-      qualified: 18,
-      avgScore: 82,
-      pipeline: 188000,
-      status: "ACTIVE",
-    },
-    {
-      id: "camp-3",
-      name: "API & Webhook Documentation Inbound",
-      type: "Developer Organic",
-      leads: 22,
-      qualified: 15,
-      avgScore: 89,
-      pipeline: 210000,
-      status: "ACTIVE",
-    },
-    {
-      id: "camp-4",
-      name: "CTO / Executive Cold Cadence",
-      type: "Outbound Email",
-      leads: 19,
-      qualified: 7,
-      avgScore: 68,
-      pipeline: 95000,
-      status: "PAUSED",
-    },
-  ];
+    };
+  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -59,6 +53,16 @@ export default function CampaignsPage() {
           </p>
         </div>
       </div>
+
+      {campaigns.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#ffffff] p-12 text-center space-y-3">
+          <Megaphone className="h-8 w-8 mx-auto text-slate-500 opacity-60" />
+          <h3 className="text-base font-bold text-white light:text-[#121212]">No campaign attribution recorded</h3>
+          <p className="text-xs text-slate-400 light:text-[#787e82] max-w-md mx-auto">
+            Source metrics are generated when signals arrive with UTM parameters or when leads are registered with acquisition channels.
+          </p>
+        </div>
+      ) : (
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {campaigns.map((c) => (
@@ -109,6 +113,7 @@ export default function CampaignsPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

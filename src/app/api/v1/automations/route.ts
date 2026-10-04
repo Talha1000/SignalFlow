@@ -146,3 +146,65 @@ export async function POST(request: Request) {
     return apiError("Failed to trigger automation", 500, "TRIGGER_ERROR", error.message);
   }
 }
+
+export async function PATCH(request: Request) {
+  const startTime = Date.now();
+  try {
+    const caller = await resolveCaller(request);
+    if (!caller) {
+      return apiError("Authentication required", 401, "UNAUTHORIZED");
+    }
+
+    if (caller.isApiKey) {
+      if (!caller.permissions?.includes("write")) {
+        return apiError("API key lacks 'write' permission", 403, "FORBIDDEN");
+      }
+    } else {
+      if (!PERMISSIONS.MANAGE_AUTOMATIONS(caller.role)) {
+        return apiError("Insufficient permissions to update automations", 403, "FORBIDDEN");
+      }
+    }
+
+    const body = await request.json();
+    const { id, name, status, nodes, edges } = body;
+
+    let targetId = id;
+    let existing = null;
+
+    if (targetId) {
+      existing = await prisma.automation.findFirst({
+        where: { id: targetId, workspaceId: caller.workspaceId },
+      });
+    }
+
+    if (!existing) {
+      // Create new automation or upsert if default ID was passed
+      const created = await prisma.automation.create({
+        data: {
+          id: targetId && !targetId.startsWith("auto-") ? targetId : undefined,
+          workspaceId: caller.workspaceId,
+          name: name || "Lead Routing Workflow",
+          status: status === "PAUSED" ? "PAUSED" : "ACTIVE",
+          nodes: nodes || [],
+          edges: edges || [],
+        },
+      });
+      return apiSuccess(created, { durationMs: Date.now() - startTime });
+    }
+
+    const updated = await prisma.automation.update({
+      where: { id: existing.id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(status !== undefined && { status }),
+        ...(nodes !== undefined && { nodes }),
+        ...(edges !== undefined && { edges }),
+      },
+    });
+
+    return apiSuccess(updated, { durationMs: Date.now() - startTime });
+  } catch (error: any) {
+    console.error("PATCH /api/v1/automations error:", error);
+    return apiError("Failed to update automation", 500, "AUTOMATION_UPDATE_ERROR", error.message);
+  }
+}

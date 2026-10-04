@@ -32,7 +32,7 @@ export function SalesCopilotDrawer({
     {
       id: "m-1",
       sender: "copilot",
-      text: "Hello Alex! I'm your SignalFlow Sales Copilot. I'm actively analyzing signals across your 65 leads and 16 companies. What would you like to know?",
+      text: "Hello! I'm your SignalFlow Sales Copilot. I'm actively analyzing live telemetry and buying signals across your workspace accounts. What would you like to know?",
       timestamp: "Just now",
     },
   ]);
@@ -69,10 +69,12 @@ export function SalesCopilotDrawer({
       });
 
       const data = await res.json();
+      const answerText = data.data?.answer || data.answer || data.error || "I reviewed your workspace data. Let me know if you need more details.";
+
       const copilotMsg: ChatMessage = {
         id: `c-${Date.now()}`,
         sender: "copilot",
-        text: data.answer || "I reviewed your workspace data. Let me know if you need more details.",
+        text: answerText,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 

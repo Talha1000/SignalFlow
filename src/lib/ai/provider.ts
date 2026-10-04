@@ -160,7 +160,7 @@ Format: 1 actionable sentence (e.g. "Send technical case study and propose a 20-
     lead: LeadContext,
     tone: "professional" | "direct" | "consultative" | "technical" = "consultative",
     customInstructions?: string
-  ): Promise<{ subject: string; body: string }> {
+  ): Promise<{ subject: string; body: string; source: "ai" | "template"; provider: "gemini" | null }> {
     const sanitizedFirst = sanitizeForPrompt(lead.firstName);
     const sanitizedCompany = sanitizeForPrompt(lead.companyName);
     const sanitizedTitle = sanitizeForPrompt(lead.title || "Leader");
@@ -186,7 +186,12 @@ Return strictly JSON with keys "subject" and "body". Do not use markdown backtic
         const cleaned = res.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
         const parsed = JSON.parse(cleaned);
         if (parsed?.subject && parsed?.body) {
-          return { subject: parsed.subject, body: parsed.body };
+          return {
+            subject: parsed.subject,
+            body: parsed.body,
+            source: "ai",
+            provider: "gemini",
+          };
         }
       } catch (err) {
         console.warn("Gemini email generation fallback:", err);
@@ -226,7 +231,63 @@ Return strictly JSON with keys "subject" and "body". Do not use markdown backtic
       },
     };
 
-    return tones[tone] || tones.consultative;
+    const templateResult = tones[tone] || tones.consultative;
+    return {
+      ...templateResult,
+      source: "template",
+      provider: null,
+    };
+  }
+
+  /**
+   * Generates a contextual email response for Inbox threads based on real dialogue history.
+   */
+  async generateInboxReply(threadContext: {
+    sender: string;
+    company: string;
+    subject: string;
+    history: Array<{ sender: string; text: string }>;
+    sentiment?: string;
+    leadScore?: number;
+  }): Promise<{ reply: string; source: "ai" | "template"; provider: "gemini" | null }> {
+    const sanitizedSender = sanitizeForPrompt(threadContext.sender);
+    const sanitizedCompany = sanitizeForPrompt(threadContext.company);
+    const sanitizedSubject = sanitizeForPrompt(threadContext.subject);
+
+    if (this.geminiClient) {
+      try {
+        const model = this.geminiClient.getGenerativeModel({ model: this.modelName });
+        const prompt = `You are an enterprise sales representative using SignalFlow. Draft a contextual, professional reply to this email thread:
+Prospect: ${sanitizedSender} at ${sanitizedCompany}.
+Subject: ${sanitizedSubject}.
+Lead Score: ${threadContext.leadScore ?? 85}/100.
+Intent/Sentiment: ${threadContext.sentiment || "Interested"}.
+
+Conversation History:
+${threadContext.history.map((h) => `${h.sender === "rep" ? "You" : sanitizedSender}: ${sanitizeForPrompt(h.text)}`).join("\n")}
+
+Respond with ONLY the reply email body. Be concise, helpful, and directly address the prospect's query. Sign off as "SignalFlow Sales Team".`;
+
+        const res = await model.generateContent(prompt);
+        const reply = res.response.text().trim();
+        if (reply) {
+          return { reply, source: "ai", provider: "gemini" };
+        }
+      } catch (err) {
+        console.warn("Gemini inbox reply generation error, using fallback template:", err);
+      }
+    }
+
+    let fallbackReply = `Hi ${sanitizedSender.split(" ")[0]},\n\nThank you for following up. I would be delighted to walk you through our intent intelligence architecture.\n\nWould Thursday afternoon work for a brief 15-minute conversation?\n\nBest regards,\nSignalFlow Sales Team`;
+    if (threadContext.sentiment === "MEETING_REQUESTED") {
+      fallbackReply = `Hi ${sanitizedSender.split(" ")[0]},\n\nThursday at 2 PM PST works great. I have sent over a calendar invite with the meeting link.\n\nLooking forward to speaking with you.\n\nBest regards,\nSignalFlow Sales Team`;
+    } else if (threadContext.sentiment === "TECHNICAL_INQUIRY") {
+      fallbackReply = `Hi ${sanitizedSender.split(" ")[0]},\n\nRegarding your technical inquiry: all SignalFlow webhooks support cryptographic HMAC SHA-256 signatures with tenant key isolation.\n\nHappy to share our full API security specification and sandbox access.\n\nBest regards,\nSignalFlow Solutions Architecture`;
+    } else if (threadContext.sentiment === "OBJECTION") {
+      fallbackReply = `Hi ${sanitizedSender.split(" ")[0]},\n\nUnderstood on the contract renewal timeline. We offer parallel evaluation sandboxes so your team can test signal accuracy alongside existing tools without disruption.\n\nBest regards,\nSignalFlow Sales Team`;
+    }
+
+    return { reply: fallbackReply, source: "template", provider: null };
   }
 
   /**

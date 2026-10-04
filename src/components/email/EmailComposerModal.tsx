@@ -36,9 +36,16 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
   const [isAiRewriting, setIsAiRewriting] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
 
+  const [generationMeta, setGenerationMeta] = useState<{ source: "ai" | "template"; provider: string | null } | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [providerUnconfigured, setProviderUnconfigured] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const handleAiRewrite = async () => {
     if (!lead) return;
     setIsAiRewriting(true);
+    setErrorMessage(null);
     try {
       const res = await fetch("/api/v1/ai/email", {
         method: "POST",
@@ -48,10 +55,16 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
           tone,
         }),
       });
-      const data = await res.json();
-      if (data.subject && data.body) {
-        setSubject(data.subject);
-        setBody(data.body);
+      const resJson = await res.json();
+      const payload = resJson.data || resJson;
+      if (payload.subject && payload.body) {
+        setSubject(payload.subject);
+        setBody(payload.body);
+        if (payload.source) {
+          setGenerationMeta({ source: payload.source, provider: payload.provider || null });
+        }
+      } else if (resJson.error) {
+        setErrorMessage(resJson.error);
       }
     } catch {
       // Fallback local tone generator
@@ -62,17 +75,58 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
         setSubject(`SignalFlow tenant isolation & webhook architecture for ${lead.company}`);
         setBody(`Hi ${lead.name.split(" ")[0]},\n\nNoticed your interest in our webhook latency and PostgreSQL tenant isolation specs.\n\nHappy to share our engineering benchmarks or set up an API sandbox for ${lead.company}.\n\nBest,\nLiam`);
       }
+      setGenerationMeta({ source: "template", provider: null });
     } finally {
       setIsAiRewriting(false);
     }
   };
 
-  const handleSend = () => {
-    setSentSuccess(true);
-    setTimeout(() => {
-      setSentSuccess(false);
-      onClose();
-    }, 1200);
+  const handleSend = async () => {
+    if (!lead) return;
+    setIsSending(true);
+    setErrorMessage(null);
+    setProviderUnconfigured(false);
+
+    try {
+      const res = await fetch("/api/v1/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: lead.id,
+          to: lead.email,
+          subject,
+          body,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 503 || data.code === "PROVIDER_NOT_CONFIGURED") {
+          setProviderUnconfigured(true);
+          setErrorMessage(data.error || "Email provider is not configured. Set RESEND_API_KEY in your environment.");
+        } else {
+          setErrorMessage(data.error || "Failed to send email. Please check quota or connection.");
+        }
+        return;
+      }
+
+      setSentSuccess(true);
+      setTimeout(() => {
+        setSentSuccess(false);
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Network error while sending email.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCopyDraft = () => {
+    navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (!isOpen || !lead) return null;
@@ -97,6 +151,32 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
         </div>
       ) : (
         <div className="space-y-4 text-xs">
+          {/* Provider unconfigured warning */}
+          {providerUnconfigured && (
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 light:text-amber-800 flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-xs">Email Provider Not Configured</p>
+                <p className="text-[11px] opacity-90">{errorMessage}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyDraft}
+                className="shrink-0 text-xs border-amber-500/30 hover:bg-amber-500/10"
+              >
+                {copied ? "Copied!" : "Copy Draft"}
+              </Button>
+            </div>
+          )}
+
+          {/* General error message */}
+          {errorMessage && !providerUnconfigured && (
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 light:text-rose-700">
+              <p className="font-semibold text-xs">Delivery Failed</p>
+              <p className="text-[11px] mt-0.5">{errorMessage}</p>
+            </div>
+          )}
+
           {/* Recipient info bar */}
           <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#252a2b] light:bg-[#f0f2f3] border border-white/10 light:border-black/10 text-slate-300 light:text-[#4a5053]">
             <div>
@@ -104,9 +184,20 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
               <span className="font-bold text-white light:text-[#121212]">{lead.name}</span>{" "}
               <span className="font-mono text-slate-400 light:text-[#787e82]">&lt;{lead.email}&gt;</span>
             </div>
-            <span className="font-mono text-[#38b6ff] light:text-[#0284c7] font-bold bg-[#38b6ff]/10 px-2.5 py-1 rounded-full border border-[#38b6ff]/20">
-              Score: {lead.score}
-            </span>
+            <div className="flex items-center gap-2">
+              {generationMeta && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                  generationMeta.source === "ai"
+                    ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                    : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                }`}>
+                  {generationMeta.source === "ai" ? "Gemini AI" : "Template"}
+                </span>
+              )}
+              <span className="font-mono text-[#38b6ff] light:text-[#0284c7] font-bold bg-[#38b6ff]/10 px-2.5 py-1 rounded-full border border-[#38b6ff]/20">
+                Score: {lead.score}
+              </span>
+            </div>
           </div>
 
           {/* AI Assist Toolbar */}
@@ -164,10 +255,16 @@ export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={onClose}>
+              <Button variant="ghost" size="sm" onClick={onClose} disabled={isSending}>
                 Cancel
               </Button>
-              <Button variant="pill" size="sm" onClick={handleSend} className="gap-1.5">
+              <Button
+                variant="pill"
+                size="sm"
+                onClick={handleSend}
+                loading={isSending}
+                className="gap-1.5"
+              >
                 Send Email Now <Send className="h-3.5 w-3.5" />
               </Button>
             </div>

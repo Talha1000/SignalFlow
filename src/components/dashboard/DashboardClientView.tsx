@@ -62,6 +62,7 @@ interface LeadItem {
 
 interface DashboardProps {
   leads: LeadItem[];
+  userName?: string;
   metrics: {
     hotCount: number;
     surgingCount: number;
@@ -71,7 +72,7 @@ interface DashboardProps {
   };
 }
 
-export function DashboardClientView({ leads, metrics }: DashboardProps) {
+export function DashboardClientView({ leads, userName = "there", metrics }: DashboardProps) {
   const searchParams = useSearchParams();
   const showTourParam = searchParams.get("tour") === "start";
   const [showTour, setShowTour] = useState(showTourParam);
@@ -85,9 +86,25 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
     score?: number;
   } | null>(null);
 
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  // Compute dynamic executive briefing based on actual workspace leads
+  const hotLeads = leads.filter((l) => l.score >= 85);
+  const briefingAccounts = (hotLeads.length > 0 ? hotLeads : leads).slice(0, 3);
+  const briefingText =
+    hotLeads.length > 0
+      ? `${hotLeads.length} account${hotLeads.length > 1 ? "s" : ""} (${briefingAccounts.map((l) => l.company?.name || "Account").join(", ")}) show immediate buying velocity with high intent. Recommended action: contact priority stakeholders within 2 hours.`
+      : leads.length > 0
+      ? `Monitoring ${leads.length} accounts across your pipeline. ${metrics.surgingCount} account(s) show surging engagement. Review intent signals to accelerate deals.`
+      : "No active accounts in this workspace yet. Connect incoming signals or import contacts to generate live intent scoring.";
+
   const filteredLeads = leads.filter((l) => {
     if (filter === "HOT") return l.score >= 85;
-    if (filter === "SURGING") return l.score >= 70 && l.score < 85;
+    if (filter === "SURGING") {
+      const delta = l.leadScore?.delta7d ?? 0;
+      return delta >= 15 || (l.score >= 70 && l.score < 85);
+    }
     return true;
   });
 
@@ -130,7 +147,7 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white light:text-[#121212] flex items-center gap-3">
-            Good morning, Alex
+            {timeGreeting}, {userName}
             <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-white/10 light:bg-black/5 text-[#10b981] border border-white/10 light:border-black/10">
               ● Live Engine Sync
             </span>
@@ -230,10 +247,10 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
           <p className="text-[10px] text-rose-400 mt-1 font-mono font-medium">14+ days inactivity</p>
         </div>
 
-        {/* Influenced Pipeline */}
+        {/* Pipeline Value */}
         <div className="rounded-2xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-white p-5 col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase text-slate-400 light:text-[#787e82]">Influenced</span>
+            <span className="text-xs font-mono uppercase text-slate-400 light:text-[#787e82]">Pipeline Value</span>
             <div className="p-1.5 rounded-full bg-emerald-500/10 text-emerald-400">
               <DollarSign className="h-4 w-4" />
             </div>
@@ -242,7 +259,7 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
             ${(metrics.pipelineValue / 1000).toFixed(0)}K
           </div>
           <p className="text-[10px] text-emerald-400 mt-1 font-mono font-medium flex items-center gap-0.5">
-            <TrendingUp className="h-3 w-3" /> Across qualified
+            <TrendingUp className="h-3 w-3" /> Qualified deals
           </p>
         </div>
       </div>
@@ -256,13 +273,10 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
               AI Sales Executive Briefing
             </h3>
           </div>
-          <span className="text-[10px] font-mono text-slate-400 light:text-[#787e82]">Generated 8:00 AM Today</span>
+          <span className="text-[10px] font-mono text-slate-400 light:text-[#787e82]">Live Intelligence</span>
         </div>
         <p className="text-xs text-slate-300 light:text-[#4a5053] leading-relaxed">
-          "3 accounts (<strong>Acme Technologies</strong>, <strong>ApexCloud Platforms</strong>, and{" "}
-          <strong>SecurityZero Corp</strong>) show immediate buying velocity with multiple
-          stakeholders active on pricing and API documentation. Sarah Chen and Marcus Vance should
-          receive tailored architecture briefings before 12:00 PM."
+          "{briefingText}"
         </p>
       </div>
 
@@ -410,8 +424,8 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
                         ))
                       ) : (
                         <div className="flex items-center gap-2 text-slate-400">
-                          <Eye className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
-                          <span>Viewed pricing & integration architecture docs</span>
+                          <Clock className="h-3.5 w-3.5 text-slate-400" />
+                          <span>No recent signals recorded yet</span>
                         </div>
                       )}
                     </div>
@@ -424,13 +438,27 @@ export function DashboardClientView({ leads, metrics }: DashboardProps) {
                       AI Recommended Action
                     </div>
                     <p className="text-xs text-slate-200 light:text-[#121212] leading-relaxed">
-                      "{lead.nextAction || "Send tailored architecture case study and offer 20-minute review call."}"
+                      "{lead.nextAction || "Enroll lead in automated nurture cadence or review scoring signals."}"
                     </p>
                   </div>
                 </div>
               </div>
             );
           })}
+
+          {filteredLeads.length === 0 && (
+            <div className="rounded-3xl border border-white/10 light:border-black/10 bg-[#1e2224] light:bg-white p-12 text-center space-y-3">
+              <Target className="h-8 w-8 mx-auto text-slate-500" />
+              <h3 className="text-base font-bold text-white light:text-[#121212]">No leads in this queue</h3>
+              <p className="text-xs text-slate-400 light:text-[#787e82]">
+                {filter === "HOT"
+                  ? "No leads currently meet the Hot threshold (score >= 85)."
+                  : filter === "SURGING"
+                  ? "No leads currently meet surging velocity criteria."
+                  : "No leads found in this workspace. Import accounts or ingest signals to begin tracking."}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

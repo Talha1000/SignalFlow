@@ -25,17 +25,7 @@ interface SearchItem {
   score?: number;
 }
 
-const mockSearchItems: SearchItem[] = [
-  // Hot leads
-  { id: "lead-1", title: "Sarah Chen", subtitle: "Acme Technologies — VP Engineering", category: "leads", href: "/app/leads", score: 91 },
-  { id: "lead-2", title: "Marcus Vance", subtitle: "ApexCloud Platforms — CTO", category: "leads", href: "/app/leads", score: 88 },
-  { id: "lead-3", title: "Victor Stone", subtitle: "SecurityZero Corp — CIO", category: "leads", href: "/app/leads", score: 92 },
-  { id: "lead-4", title: "Kieran O'Connor", subtitle: "HyperScale Networks — VP Product", category: "leads", href: "/app/leads", score: 89 },
-  // Companies
-  { id: "comp-1", title: "Acme Technologies", subtitle: "Developer Infrastructure (Score: 91)", category: "companies", href: "/app/companies" },
-  { id: "comp-2", title: "ApexCloud Platforms", subtitle: "Cloud & DevOps (Score: 88)", category: "companies", href: "/app/companies" },
-  { id: "comp-3", title: "Quantix Financial", subtitle: "Fintech & Banking (Score: 84)", category: "companies", href: "/app/companies" },
-  // Navigation
+const navigationItems: SearchItem[] = [
   { id: "nav-1", title: "Priority Queue & Dashboard", subtitle: "Revenue command center", category: "pages", href: "/app/dashboard" },
   { id: "nav-2", title: "Visual Pipeline Kanban", subtitle: "Deal pipeline by stages", category: "pages", href: "/app/pipeline" },
   { id: "nav-3", title: "Sequences & Cadences", subtitle: "Drip campaigns with auto-stop", category: "pages", href: "/app/sequences" },
@@ -43,7 +33,6 @@ const mockSearchItems: SearchItem[] = [
   { id: "nav-5", title: "Executive Analytics", subtitle: "Velocity & conversion metrics", category: "pages", href: "/app/analytics" },
   { id: "nav-6", title: "AI Insights Center", subtitle: "Surging accounts & alerts", category: "pages", href: "/app/ai-insights" },
   { id: "nav-7", title: "API Keys & Webhooks", subtitle: "REST API v1 configuration", category: "pages", href: "/app/settings/api" },
-  // Actions
   { id: "act-1", title: "Filter: Show Hot Leads (Score 85+)", subtitle: "Quick priority filter", category: "actions", href: "/app/leads?intent=HOT" },
   { id: "act-2", title: "Action: Import Leads from CSV", subtitle: "Start CSV upload wizard", category: "actions", href: "/app/onboarding" },
 ];
@@ -57,13 +46,15 @@ export function CommandPalette({
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [remoteResults, setRemoteResults] = useState<SearchItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         if (isOpen) onClose();
-        else onClose(); // parent can toggle
+        else onClose();
       }
       if (e.key === "Escape") onClose();
     };
@@ -71,15 +62,35 @@ export function CommandPalette({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      setLoading(true);
+      fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.data?.results) {
+            setRemoteResults(data.data.results);
+          }
+        })
+        .catch((err) => console.warn("Search error:", err))
+        .finally(() => setLoading(false));
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, query]);
+
   if (!isOpen) return null;
 
-  const filtered = query.trim()
-    ? mockSearchItems.filter(
+  const matchingNavItems = query.trim()
+    ? navigationItems.filter(
         (item) =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           (item.subtitle && item.subtitle.toLowerCase().includes(query.toLowerCase()))
       )
-    : mockSearchItems.slice(0, 8);
+    : navigationItems.slice(0, 4);
+
+  const combinedResults = [...remoteResults, ...matchingNavItems];
 
   const handleSelect = (href: string) => {
     onClose();
@@ -114,12 +125,16 @@ export function CommandPalette({
 
         {/* Results list */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
-          {filtered.length === 0 ? (
+          {loading && combinedResults.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-400 light:text-[#787e82]">
+              Searching workspace records...
+            </div>
+          ) : combinedResults.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400 light:text-[#787e82]">
               No matching leads, companies, or commands found for "{query}".
             </div>
           ) : (
-            filtered.map((item) => (
+            combinedResults.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleSelect(item.href)}
