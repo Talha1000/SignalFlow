@@ -2,8 +2,23 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, Cpu, Send, Layers, ArrowRight, ShieldCheck, Database, Zap, Sparkles } from "lucide-react";
+import {
+  Activity,
+  Cpu,
+  Send,
+  Layers,
+  ArrowRight,
+  ShieldCheck,
+  Database,
+  Zap,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  ArrowUpRight,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import Link from "next/link";
 
 interface SectorTab {
   id: string;
@@ -18,7 +33,13 @@ interface SectorTab {
     stat: string;
     statLabel: string;
   }[];
-  codeSnippet: string;
+  previewData: {
+    badge: string;
+    headline: string;
+    status: string;
+    items: Array<{ title: string; subtitle: string; tag: string; tagColor: string }>;
+    detailNote: string;
+  };
 }
 
 const SECTORS: SectorTab[] = [
@@ -53,17 +74,32 @@ const SECTORS: SectorTab[] = [
         statLabel: "Ingestion Latency",
       },
     ],
-    codeSnippet: `// 1st-Party Edge Ingestion
-import { SignalFlow } from "@signalflow/sdk";
-
-SignalFlow.ingest({
-  event: "high_intent_pricing_toggle",
-  metadata: {
-    tier: "enterprise_annual",
-    sessionDepth: 7,
-    securityWhitepaperDownloaded: true
-  }
-});`,
+    previewData: {
+      badge: "LIVE 1ST-PARTY STREAM",
+      headline: "Real-Time Enterprise Intent Feed",
+      status: "Continuous Ingestion Active",
+      items: [
+        {
+          title: "Acme Technologies (Series C)",
+          subtitle: "Enterprise pricing calculator evaluated 3x • Session depth 8 pages",
+          tag: "+25 Intent Pts",
+          tagColor: "#34FEFF",
+        },
+        {
+          title: "Vanguard Systems (Fortune 500)",
+          subtitle: "Downloaded SOC-2 Type II audit report & security whitepaper",
+          tag: "+20 Intent Pts",
+          tagColor: "#38B6FF",
+        },
+        {
+          title: "Apex Cloud Infrastructure",
+          subtitle: "3 teammates active in API documentation across past 24 hours",
+          tag: "+18 Intent Pts",
+          tagColor: "#FF914D",
+        },
+      ],
+      detailNote: "Sub-10ms edge processing • 100% first-party cryptographic attribution",
+    },
   },
   {
     id: "ai-scoring",
@@ -72,7 +108,7 @@ SignalFlow.ingest({
     lightColor: "#0284c7",
     leadHeading: "Deterministic Lead Scoring with Explainable Machine Learning",
     leadParagraph:
-      "Eliminate sales guesswork. SignalFlow calculates ICP fit, intent velocity, and buying committee recency—giving your team a transparent point-by-point score breakdown.",
+      "Eliminate sales guesswork. SignalFlow calculates ICP fit, intent velocity, and buying committee recency—giving your revenue team a transparent point-by-point score breakdown.",
     cards: [
       {
         title: "Multi-Persona Attribution",
@@ -96,26 +132,41 @@ SignalFlow.ingest({
         statLabel: "Deterministic Auditing",
       },
     ],
-    codeSnippet: `// Explainable AI Attribution Engine
-{
-  "account": "Stripe Technologies",
-  "calculatedScore": 96,
-  "confidence": "Optimal ICP",
-  "factors": [
-    { "factor": "VP Engineering Authority", "pts": +30 },
-    { "factor": "Enterprise Security Audit Check", "pts": +25 },
-    { "factor": "3 Active Team Members (24h)", "pts": +20 }
-  ]
-}`,
+    previewData: {
+      badge: "MATHEMATICAL ATTRIBUTION",
+      headline: "Account Fit & Intent Score: 96/100",
+      status: "Optimal ICP Target",
+      items: [
+        {
+          title: "VP Engineering Authority Identified",
+          subtitle: "Executive buyer seniority match with budget signing jurisdiction",
+          tag: "+30 pts",
+          tagColor: "#38B6FF",
+        },
+        {
+          title: "High-Volume Pricing Tier Calculation",
+          subtitle: "Evaluated 500+ seat enterprise license model",
+          tag: "+25 pts",
+          tagColor: "#34FEFF",
+        },
+        {
+          title: "Multi-Stakeholder Velocity Surge",
+          subtitle: "3 distinct engineering leads active in docs in last 12 hours",
+          tag: "+20 pts",
+          tagColor: "#F2BE01",
+        },
+      ],
+      detailNote: "Zero hallucination • Full deterministic score traceability in plain English",
+    },
   },
   {
     id: "autonomous-cadence",
     name: "Autonomous Outbound",
     color: "#FF914D",
-    lightColor: "#e06c27",
     leadHeading: "Instant Multi-Channel Engagement Before Intent Cools",
+    lightColor: "#e06c27",
     leadParagraph:
-      "When enterprise accounts cross high-intent thresholds, SignalFlow triggers hyper-tailored outbound communications and alerts account executives via Slack in under 90 seconds.",
+      "When enterprise accounts cross high-intent thresholds, SignalFlow triggers hyper-tailored outbound communications and alerts dedicated account executives via Slack in under 90 seconds.",
     cards: [
       {
         title: "Contextual AI Copilot",
@@ -139,13 +190,32 @@ SignalFlow.ingest({
         statLabel: "AE Claim Rate < 5m",
       },
     ],
-    codeSnippet: `// Autonomous Outbound Cadence Dispatch
-await SignalFlow.cadences.dispatch({
-  leadId: "lead_enterprise_418",
-  channel: "email_and_slack",
-  template: "executive_architecture_review",
-  autoHaltOnReply: true
-});`,
+    previewData: {
+      badge: "AUTONOMOUS EXECUTION",
+      headline: "Executive Outbound Dispatch Queue",
+      status: "Triggered in 42 seconds",
+      items: [
+        {
+          title: "Contextual Executive Outreach Drafted",
+          subtitle: "References visited SSO architecture & compliance docs directly",
+          tag: "Ready to Dispatch",
+          tagColor: "#FF914D",
+        },
+        {
+          title: "Real-Time Slack Channel Notification",
+          subtitle: "Pushed to #enterprise-leads with 1-click AE ownership claim",
+          tag: "Delivered",
+          tagColor: "#34FEFF",
+        },
+        {
+          title: "Automated Collision Safety Check",
+          subtitle: "Zero existing open opportunities detected in Salesforce CRM",
+          tag: "Safety Verified",
+          tagColor: "#10b981",
+        },
+      ],
+      detailNote: "Automatic sequence halt triggered immediately upon prospect response",
+    },
   },
   {
     id: "crm-sync",
@@ -178,12 +248,32 @@ await SignalFlow.cadences.dispatch({
         statLabel: "Type II Certified",
       },
     ],
-    codeSnippet: `// Bi-Directional CRM Sync Stream
-const syncResult = await SignalFlow.crm.sync({
-  destination: "Salesforce",
-  recordType: "Account",
-  updateFields: ["Intent_Score__c", "Surge_Status__c", "Last_Intent_Date__c"]
-});`,
+    previewData: {
+      badge: "BI-DIRECTIONAL SYNC",
+      headline: "CRM & Warehouse Pipeline State",
+      status: "Synced 2s ago",
+      items: [
+        {
+          title: "Salesforce Account Delta Pushed",
+          subtitle: "Field 'Intent_Score__c' updated to 96 • Surge status 'Critical'",
+          tag: "Synced (14ms)",
+          tagColor: "#F2BE01",
+        },
+        {
+          title: "HubSpot Deal Probability Recalculated",
+          subtitle: "Stage advanced to 'Solution Evaluation' based on buying group activity",
+          tag: "Synced (18ms)",
+          tagColor: "#38B6FF",
+        },
+        {
+          title: "Snowflake Warehouse Event Replicated",
+          subtitle: "Audit log entry #9841 stored with immutable SHA-256 signature",
+          tag: "Replicated",
+          tagColor: "#34FEFF",
+        },
+      ],
+      detailNote: "Zero data conflicts • End-to-end encrypted delta pipeline with SLA backing",
+    },
   },
 ];
 
@@ -291,18 +381,71 @@ export function WorkflowTabsSection() {
               ))}
             </div>
 
-            {/* Telemetry Code Inspector Preview */}
-            <div className="rounded-[18px] bg-[#121212] border border-white/10 p-5 overflow-x-auto text-left">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10 text-xs font-mono text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>runtime_telemetry.ts</span>
+            {/* Executive Enterprise Console Preview (Replacing raw code terminal) */}
+            <div className="rounded-[20px] bg-[#252a2b] light:bg-[#f7f7f7] border border-white/10 light:border-black/10 p-6 sm:p-8 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-5 mb-5 border-b border-white/10 light:border-black/10 gap-3">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="text-[11px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-black/20 light:bg-black/5"
+                    style={{ color: current.color }}
+                  >
+                    {current.previewData.badge}
+                  </span>
+                  <h4 className="text-base font-bold text-white light:text-[#121212]">
+                    {current.previewData.headline}
+                  </h4>
                 </div>
-                <span className="text-[#38b6ff] font-semibold">Active Execution</span>
+                <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 light:text-emerald-600 font-semibold">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{current.previewData.status}</span>
+                </div>
               </div>
-              <pre className="text-xs font-mono text-emerald-400/90 leading-relaxed overflow-x-auto">
-                <code>{current.codeSnippet}</code>
-              </pre>
+
+              {/* Items List */}
+              <div className="space-y-3 mb-6">
+                {current.previewData.items.map((item, itemIdx) => (
+                  <div
+                    key={itemIdx}
+                    className="p-4 rounded-[14px] bg-[#1e2224] light:bg-white border border-white/10 light:border-black/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:border-white/20 light:hover:border-black/20 transition-all shadow-xs"
+                  >
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" style={{ color: item.tagColor }} />
+                      <div>
+                        <div className="text-sm font-bold text-white light:text-[#121212]">
+                          {item.title}
+                        </div>
+                        <div className="text-xs text-slate-400 light:text-[#6c7377] mt-0.5">
+                          {item.subtitle}
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-white/5 light:bg-black/5 shrink-0 self-start sm:self-auto"
+                      style={{ color: item.tagColor }}
+                    >
+                      {item.tag}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Trigger & Footnote */}
+              <div className="pt-4 border-t border-white/10 light:border-black/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <span className="text-xs font-mono text-slate-400 light:text-[#787e82]">
+                  {current.previewData.detailNote}
+                </span>
+
+                <Link href="/app/dashboard">
+                  <Button
+                    variant="pill"
+                    size="sm"
+                    className="gap-2 font-bold bg-[#262626] hover:bg-black text-white light:bg-[#121212] light:text-white border border-white/20 light:border-black/20"
+                  >
+                    Start Your Journey with {current.name}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
