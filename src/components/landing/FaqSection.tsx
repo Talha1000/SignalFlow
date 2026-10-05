@@ -30,7 +30,7 @@ export function FaqSection() {
     },
     {
       q: "What security compliance do you offer for enterprise customers?",
-      a: "We provide SOC2 Type II compliance reports, SAML 2.0 / Okta SSO, custom role-based access control (RBAC), end-to-end encryption in transit (TLS 1.3) and at rest (AES-256), and zero data retention agreements for our AI models.",
+      a: "We provide our comprehensive Security Architecture & SOC2 alignment packet, SAML 2.0 / Okta SSO, custom role-based access control (RBAC), end-to-end encryption in transit (TLS 1.3) and at rest (AES-256), and zero data retention agreements for our AI models.",
     },
   ];
 

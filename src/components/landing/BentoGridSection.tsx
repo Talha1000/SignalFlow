@@ -167,7 +167,7 @@ export function BentoGridSection() {
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <span className="text-[11px] font-mono uppercase tracking-wider font-semibold text-[#10b981] bg-white/5 light:bg-[#f0f2f3] px-3 py-1 rounded-full border border-white/10 light:border-black/10">
-                SOC2 Type II
+                SOC2 Aligned
               </span>
             </div>
             <h3 className="text-2xl font-bold text-white light:text-[#121212]">Sovereign Data Security</h3>

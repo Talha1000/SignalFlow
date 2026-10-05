@@ -245,7 +245,7 @@ const SECTORS: SectorTab[] = [
         description:
           "Enforce strict least-privilege permissions, SSO authentication, and complete immutable audit logs across your sales organization.",
         stat: "SOC-2",
-        statLabel: "Type II Certified",
+        statLabel: "Aligned Architecture",
       },
     ],
     previewData: {

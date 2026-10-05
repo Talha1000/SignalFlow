@@ -57,7 +57,7 @@ export function FinalCtaSection() {
               <CheckCircle2 className="h-4 w-4 text-[#f2be01]" /> 14-day unrestricted pilot
             </span>
             <span className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-[#10b981]" /> SOC2 Type II &amp; ISO 27001 Certified
+              <ShieldCheck className="h-4 w-4 text-[#10b981]" /> SOC2 &amp; ISO 27001 Aligned Security
             </span>
           </div>
         </div>

@@ -27,7 +27,7 @@ export function Footer() {
               <span>•</span>
               <span className="inline-flex items-center gap-2">
                 <Shield className="h-3.5 w-3.5 text-[#38b6ff] light:text-[#0284c7]" />
-                SOC2 Type II Certified
+                SOC2 & ISO 27001 Aligned
               </span>
             </div>
           </div>
