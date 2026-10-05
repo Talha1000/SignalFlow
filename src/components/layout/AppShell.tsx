@@ -46,8 +46,8 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     title: "Core Revenue",
     items: [
       { label: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
-      { label: "Inbox", href: "/app/inbox", icon: Inbox, badge: "3", badgeColor: "bg-[#38b6ff]/20 text-[#38b6ff] light:bg-[#0284c7]/10 light:text-[#0284c7]" },
-      { label: "Priority Leads", href: "/app/leads", icon: Target, badge: "8 Hot", badgeColor: "bg-red-500/20 text-red-400 light:bg-red-100 light:text-red-700 font-bold" },
+      { label: "Inbox", href: "/app/inbox", icon: Inbox },
+      { label: "Priority Leads", href: "/app/leads", icon: Target },
       { label: "Companies", href: "/app/companies", icon: Building },
       { label: "Contacts", href: "/app/contacts", icon: Users },
       { label: "Pipeline", href: "/app/pipeline", icon: Trello },
@@ -65,7 +65,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     title: "Intelligence",
     items: [
       { label: "Analytics", href: "/app/analytics", icon: BarChart3 },
-      { label: "AI Insights", href: "/app/ai-insights", icon: Sparkles, badge: "New", badgeColor: "bg-[#f2be01]/20 text-[#f2be01] light:bg-amber-100 light:text-amber-800" },
+      { label: "AI Insights", href: "/app/ai-insights", icon: Sparkles },
     ],
   },
   {
@@ -88,6 +88,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+    role?: string;
+  } | null>(null);
+  const [currentWorkspace, setCurrentWorkspace] = useState<{
+    id: string;
+    name: string;
+    slug?: string;
+    domain?: string;
+    plan?: string;
+  } | null>(null);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.data?.user) setCurrentUser(data.data.user);
+        if (data.data?.workspace) setCurrentWorkspace(data.data.workspace);
+      })
+      .catch((err) => console.warn("Failed to load user info:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -99,18 +129,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="hidden lg:flex w-64 flex-col border-r border-white/10 light:border-black/10 bg-[#181b1c] light:bg-white select-none">
         {/* Workspace Brand / Selector */}
         <div className="p-5 border-b border-white/10 light:border-black/10 flex items-center justify-between">
-          <Link href="/app/dashboard" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1e2224] light:bg-[#f0f2f3] border border-white/15 light:border-black/10">
+          <Link href="/app/dashboard" className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1e2224] light:bg-[#f0f2f3] border border-white/15 light:border-black/10 shrink-0">
               <Activity className="h-4 w-4 text-[#38b6ff] light:text-[#0284c7]" />
             </div>
-            <div>
-              <div className="text-sm font-bold text-white light:text-[#121212] flex items-center gap-1.5">
-                SignalFlow
-                <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded-full bg-white/10 light:bg-black/5 text-[#38b6ff] light:text-[#0284c7] border border-white/10 light:border-black/10">
-                  Tech
-                </span>
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-white light:text-[#121212] truncate">
+                {currentWorkspace?.name || "SignalFlow"}
               </div>
-              <div className="text-[10px] text-slate-400 light:text-[#787e82] font-mono">Global Enterprise</div>
+              <div className="text-[10px] text-slate-400 light:text-[#787e82] font-mono truncate">
+                {currentWorkspace?.plan ? `${currentWorkspace.plan} Plan` : "Workspace"}
+              </div>
             </div>
           </Link>
         </div>
@@ -158,21 +187,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer User Card */}
         <div className="p-4 border-t border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#f0f2f3] flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <img
-              src="https://avatar.vercel.sh/alex"
-              alt="Alex Morgan"
-              className="h-8 w-8 rounded-full border border-white/15 light:border-black/15"
+              src={currentUser?.avatarUrl || `https://avatar.vercel.sh/${encodeURIComponent(currentUser?.name || "user")}`}
+              alt={currentUser?.name || "User"}
+              className="h-8 w-8 rounded-full border border-white/15 light:border-black/15 shrink-0"
             />
-            <div>
-              <div className="text-xs font-semibold text-white light:text-[#121212]">Alex Morgan</div>
-              <div className="text-[10px] text-[#38b6ff] light:text-[#0284c7] font-mono">Enterprise Admin</div>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-white light:text-[#121212] truncate">
+                {currentUser?.name || "Workspace Member"}
+              </div>
+              <div className="text-[10px] text-[#38b6ff] light:text-[#0284c7] font-mono truncate">
+                {currentUser?.role ? currentUser.role.replace(/_/g, " ") : "Member"}
+              </div>
             </div>
           </div>
           <button
             onClick={handleLogout}
             title="Sign out"
-            className="p-1.5 rounded-full text-slate-400 light:text-[#787e82] hover:text-red-400 hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 light:text-[#787e82] hover:text-red-400 hover:bg-white/5 transition-colors shrink-0"
           >
             <LogOut className="h-4 w-4" />
           </button>

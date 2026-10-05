@@ -10,6 +10,7 @@ const UpdateWorkspaceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   domain: z.string().max(255).optional().nullable(),
   timezone: z.string().max(50).optional(),
+  plan: z.enum(["FREE", "STARTER", "GROWTH", "BUSINESS", "ENTERPRISE"]).optional(),
   settings: z.record(z.string(), z.any()).optional(),
   scoringThresholds: z
     .object({
@@ -73,7 +74,7 @@ export async function PATCH(request: Request) {
       return apiError("Invalid update payload", 400, "VALIDATION_ERROR", parseResult.error.format());
     }
 
-    const { name, domain, timezone, settings, scoringThresholds } = parseResult.data;
+    const { name, domain, timezone, plan, settings, scoringThresholds } = parseResult.data;
 
     // Merge settings if timezone is provided
     const existing = await prisma.workspace.findUnique({
@@ -90,6 +91,7 @@ export async function PATCH(request: Request) {
     const updateData: any = {};
     if (name) updateData.name = name;
     if (domain !== undefined) updateData.domain = domain;
+    if (plan) updateData.plan = plan;
     if (scoringThresholds) updateData.scoringThresholds = scoringThresholds;
     updateData.settings = updatedSettings;
 
@@ -97,6 +99,18 @@ export async function PATCH(request: Request) {
       where: { id: caller.workspaceId },
       data: updateData,
     });
+
+    if (plan) {
+      await prisma.subscription.upsert({
+        where: { workspaceId: caller.workspaceId },
+        update: { plan },
+        create: {
+          workspaceId: caller.workspaceId,
+          plan,
+          status: "ACTIVE",
+        },
+      });
+    }
 
     return apiSuccess(updated, { durationMs: Date.now() - startTime });
   } catch (error: any) {

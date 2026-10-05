@@ -188,7 +188,7 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-8 pt-4">
-              <Link href="/signup">
+              <Link href={`/signup?plan=${tier.name.toLowerCase()}`}>
                 <Button
                   variant={tier.highlight ? "pill" : "outline"}
                   className="w-full justify-center"

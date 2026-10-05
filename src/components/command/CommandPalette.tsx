@@ -32,7 +32,7 @@ const navigationItems: SearchItem[] = [
   { id: "nav-4", title: "Workflow Automations", subtitle: "Visual node builder", category: "pages", href: "/app/automations" },
   { id: "nav-5", title: "Executive Analytics", subtitle: "Velocity & conversion metrics", category: "pages", href: "/app/analytics" },
   { id: "nav-6", title: "AI Insights Center", subtitle: "Surging accounts & alerts", category: "pages", href: "/app/ai-insights" },
-  { id: "nav-7", title: "API Keys & Webhooks", subtitle: "REST API v1 configuration", category: "pages", href: "/app/settings/api" },
+  { id: "nav-7", title: "API Keys & Webhooks", subtitle: "REST API v1 configuration", category: "pages", href: "/app/settings?tab=api" },
   { id: "act-1", title: "Filter: Show Hot Leads (Score 85+)", subtitle: "Quick priority filter", category: "actions", href: "/app/leads?intent=HOT" },
   { id: "act-2", title: "Action: Import Leads from CSV", subtitle: "Start CSV upload wizard", category: "actions", href: "/app/onboarding" },
 ];

@@ -13,12 +13,12 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { label: "Sectors", href: "#sectors" },
-    { label: "Simulator", href: "#simulator" },
-    { label: "Milestones", href: "#milestones" },
-    { label: "Calculator", href: "#calculator" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "Insights", href: "#insights" },
+    { label: "Sectors", href: "/#sectors" },
+    { label: "Simulator", href: "/#simulator" },
+    { label: "Milestones", href: "/#milestones" },
+    { label: "Calculator", href: "/#calculator" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Insights", href: "/#insights" },
   ];
 
   return (

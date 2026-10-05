@@ -83,7 +83,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/app/settings/api" className="hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors">
+                <Link href="/app/settings?tab=api" className="hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors">
                   REST API & Webhooks
                 </Link>
               </li>

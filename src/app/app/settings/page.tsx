@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -26,8 +27,29 @@ const tabs = [
   { id: 'api', label: 'API Keys', icon: Key },
 ];
 
-export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('general');
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabQuery = searchParams.get('tab') || 'general';
+  const [activeTab, setActiveTab] = useState(tabQuery);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabs.some((t) => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    router.replace(`/app/settings?tab=${tabId}`, { scroll: false });
+  };
+
+  // Plan Upgrade Modal State
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null);
 
   // General Settings State
   const [workspaceName, setWorkspaceName] = useState('');
@@ -224,6 +246,33 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpgrade = async (targetPlan: string) => {
+    setIsUpgrading(true);
+    setUpgradeError(null);
+    setUpgradeSuccess(null);
+    try {
+      const res = await fetch('/api/v1/workspace', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: targetPlan }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update subscription tier');
+      }
+      setUpgradeSuccess(`Successfully upgraded workspace to ${targetPlan} tier!`);
+      await fetchUsage();
+      setTimeout(() => {
+        setUpgradeModalOpen(false);
+        setUpgradeSuccess(null);
+      }, 1500);
+    } catch (err: any) {
+      setUpgradeError(err.message || 'Error updating plan');
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div>
@@ -242,7 +291,7 @@ export default function SettingsPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-[#38b6ff] text-[#38b6ff] light:border-[#0284c7] light:text-[#0284c7] font-bold'
@@ -337,8 +386,18 @@ export default function SettingsPage() {
                 Real-time usage meters backed by atomic transactional quota verification.
               </p>
             </div>
-            <div className="px-3.5 py-1.5 rounded-full bg-[#38b6ff]/15 border border-[#38b6ff]/30 text-[#38b6ff] light:text-[#0284c7] font-mono text-xs font-bold uppercase self-start">
-              Tier: {planData?.plan || 'STARTER'}
+            <div className="flex items-center gap-3 self-start">
+              <div className="px-3.5 py-1.5 rounded-full bg-[#38b6ff]/15 border border-[#38b6ff]/30 text-[#38b6ff] light:text-[#0284c7] font-mono text-xs font-bold uppercase">
+                Tier: {planData?.plan || 'STARTER'}
+              </div>
+              <Button
+                variant="pill"
+                size="sm"
+                onClick={() => setUpgradeModalOpen(true)}
+                className="text-xs shadow-sm"
+              >
+                Change Plan / Upgrade
+              </Button>
             </div>
           </div>
 
@@ -611,6 +670,91 @@ export default function SettingsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Tier Upgrade Modal */}
+      <Modal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        title="Upgrade Workspace Plan Tier"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-300 light:text-[#4a5053]">
+            Select an upgraded tier to instantly expand lead capacity, AI intelligence credits, and team seats.
+          </p>
+
+          {upgradeSuccess && (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              {upgradeSuccess}
+            </div>
+          )}
+
+          {upgradeError && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {upgradeError}
+            </div>
+          )}
+
+          <div className="space-y-2.5">
+            {[
+              { id: "STARTER", name: "Starter", price: "$49/mo", leads: "1,000", ai: "500", seats: "3" },
+              { id: "GROWTH", name: "Growth", price: "$149/mo", leads: "10,000", ai: "2,500", seats: "10" },
+              { id: "BUSINESS", name: "Business", price: "$399/mo", leads: "50,000", ai: "10,000", seats: "30" },
+            ].map((tier) => (
+              <div
+                key={tier.id}
+                className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                  planData?.plan === tier.id
+                    ? "border-[#38b6ff] bg-[#38b6ff]/10"
+                    : "border-white/10 light:border-black/10 bg-[#252a2b] light:bg-[#f0f2f3]"
+                }`}
+              >
+                <div>
+                  <div className="text-xs font-bold text-white light:text-[#121212] flex items-center gap-2">
+                    {tier.name}
+                    <span className="font-mono text-[#38b6ff] light:text-[#0284c7] font-semibold">{tier.price}</span>
+                    {planData?.plan === tier.id && (
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400">
+                        Current
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-slate-400 light:text-[#787e82] mt-0.5">
+                    {tier.leads} leads • {tier.ai} AI credits • {tier.seats} team seats
+                  </div>
+                </div>
+                {planData?.plan !== tier.id && (
+                  <Button
+                    variant="pill"
+                    size="sm"
+                    loading={isUpgrading}
+                    onClick={() => handleUpgrade(tier.id)}
+                    className="text-xs"
+                  >
+                    Select
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 rounded-2xl border border-white/10 light:border-black/10 bg-[#1e2224] text-center text-xs text-slate-400">
+            Need custom SLA or sovereign data isolation?{" "}
+            <a href="/contact" className="text-[#38b6ff] font-semibold hover:underline">
+              Contact Enterprise Sales →
+            </a>
+          </div>
+        </div>
+      </Modal>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

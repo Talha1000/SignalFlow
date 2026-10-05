@@ -1,12 +1,63 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, MessageSquare, Building2, Send, CheckCircle2 } from "lucide-react";
+import { Mail, MessageSquare, Building2, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export default function ContactPage() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [teamSize, setTeamSize] = useState("11-50");
+  const [message, setMessage] = useState("");
+
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          company,
+          teamSize,
+          message,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || "Failed to submit inquiry. Please try again.");
+      }
+
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || "Network error. Please try again or email sales@signalflow.io.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setCompany("");
+    setMessage("");
+    setError(null);
+  };
 
   return (
     <div className="py-16 sm:py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -69,28 +120,59 @@ export default function ContactPage() {
               </div>
               <h3 className="text-lg font-bold text-white light:text-[#121212]">Inquiry Received</h3>
               <p className="text-xs text-slate-400 light:text-[#787e82] max-w-xs mx-auto">
-                Thanks for reaching out. A solutions architect will respond within 2 business hours.
+                Thanks for reaching out. A solutions architect has been notified and will respond within 2 business hours.
               </p>
-              <Button variant="outline" size="sm" onClick={() => setSubmitted(false)}>
+              <Button variant="outline" size="sm" onClick={handleReset}>
                 Send another message
               </Button>
             </div>
           ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSubmitted(true);
-              }}
-              className="space-y-4"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
-                <Input label="First Name" placeholder="Sarah" required />
-                <Input label="Last Name" placeholder="Chen" required />
+                <Input
+                  label="First Name"
+                  placeholder="Sarah"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Last Name"
+                  placeholder="Chen"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
               </div>
-              <Input label="Work Email" type="email" placeholder="sarah@company.com" required />
-              <Input label="Company Name" placeholder="Acme Technologies" required />
+
+              <Input
+                label="Work Email"
+                type="email"
+                placeholder="sarah@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+
+              <Input
+                label="Company Name"
+                placeholder="Acme Technologies"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                required
+              />
+
               <Select
                 label="Team Size"
+                value={teamSize}
+                onChange={(e) => setTeamSize(e.target.value)}
                 options={[
                   { label: "1-10 employees", value: "1-10" },
                   { label: "11-50 employees", value: "11-50" },
@@ -103,13 +185,20 @@ export default function ContactPage() {
                 <label className="block text-xs font-medium text-slate-300 light:text-[#121212]">Message / Goal</label>
                 <textarea
                   rows={3}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                   className="w-full rounded-xl border border-white/10 light:border-black/15 bg-[#181b1c] light:bg-white p-3 text-xs text-white light:text-[#121212] placeholder-slate-400 light:placeholder-[#8a9296] focus:border-[#38b6ff] light:focus:border-[#0284c7] focus:outline-none focus:ring-1 focus:ring-[#38b6ff]"
                   placeholder="Tell us about your pipeline and what you're evaluating..."
                   required
                 />
               </div>
 
-              <Button type="submit" variant="pill" className="w-full justify-center shadow-md">
+              <Button
+                type="submit"
+                variant="pill"
+                loading={loading}
+                className="w-full justify-center shadow-md"
+              >
                 Submit Inquiry <Send className="h-3.5 w-3.5 ml-2" />
               </Button>
             </form>

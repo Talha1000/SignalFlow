@@ -258,7 +258,12 @@ export default function InboxPage() {
         {/* Left Column: Thread List */}
         <div className="md:col-span-5 border-r border-white/10 light:border-black/10 flex flex-col min-h-0 bg-[#181b1c] light:bg-[#fafafa]">
           <div className="p-3.5 border-b border-white/10 light:border-black/10 bg-[#1e2224] light:bg-white flex items-center justify-between text-xs text-slate-400 light:text-[#787e82]">
-            <span className="font-semibold text-white light:text-[#121212]">Active Discussions ({threads.length})</span>
+            <span className="font-semibold text-white light:text-[#121212] flex items-center gap-1.5">
+              Interactive Discussions ({threads.length})
+              <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                Sample Data
+              </span>
+            </span>
             <span className="text-[10px] font-mono text-[#38b6ff] light:text-[#0284c7]">Auto-Stop Active</span>
           </div>
 

@@ -26,7 +26,7 @@ export function PricingSection() {
         "Auto-stop cadence safety protection",
       ],
       ctaText: "Start 14-Day Free Trial",
-      ctaLink: "/signup",
+      ctaLink: "/signup?plan=starter",
     },
     {
       name: "Growth",
@@ -46,7 +46,7 @@ export function PricingSection() {
         "Sales Copilot personalized intelligence",
       ],
       ctaText: "Deploy Growth Platform",
-      ctaLink: "/signup",
+      ctaLink: "/signup?plan=growth",
     },
     {
       name: "Enterprise",

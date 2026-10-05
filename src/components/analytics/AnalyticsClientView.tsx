@@ -76,16 +76,36 @@ export function AnalyticsClientView({ leads }: AnalyticsProps) {
   const avgScore = leads.length > 0 ? Math.round(leads.reduce((sum, l) => sum + l.score, 0) / leads.length) : 0;
   const leadToMeetingRate = leads.length > 0 ? `${((meetingCount / leads.length) * 100).toFixed(1)}%` : "0.0%";
 
-  // 4. Monthly Pipeline Velocity Timeline
-  const months = ["May", "Jun", "Jul", "Aug", "Sep", "Oct"];
-  const velocityData = months.map((month, idx) => {
-    const factor = (idx + 1) / months.length;
-    return {
-      month,
-      pipeline: Math.round((totalValue / 1000) * factor),
-      deals: Math.round(leads.length * factor),
-    };
+  // 4. Monthly Pipeline Velocity Timeline - Grounded in actual lead creation timestamps
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthlyBuckets: Record<string, { pipeline: number; deals: number }> = {};
+
+  leads.forEach((l) => {
+    const d = new Date(l.createdAt);
+    if (!isNaN(d.getTime())) {
+      const key = monthNames[d.getMonth()];
+      if (!monthlyBuckets[key]) {
+        monthlyBuckets[key] = { pipeline: 0, deals: 0 };
+      }
+      monthlyBuckets[key].pipeline += (l.dealValue || 0);
+      monthlyBuckets[key].deals += 1;
+    }
   });
+
+  const bucketKeys = Object.keys(monthlyBuckets);
+  const velocityData = bucketKeys.length > 0
+    ? bucketKeys.map((m) => ({
+        month: m,
+        pipeline: Math.round(monthlyBuckets[m].pipeline / 1000),
+        deals: monthlyBuckets[m].deals,
+      }))
+    : [
+        {
+          month: monthNames[new Date().getMonth()],
+          pipeline: Math.round(totalValue / 1000),
+          deals: leads.length,
+        },
+      ];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">

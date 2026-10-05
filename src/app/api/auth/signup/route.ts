@@ -49,6 +49,13 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const requestedPlanStr = typeof data.plan === "string" ? data.plan.toUpperCase() : "STARTER";
+    let selectedPlan: Plan = Plan.STARTER;
+    if (requestedPlanStr === "FREE") selectedPlan = Plan.FREE;
+    else if (requestedPlanStr === "GROWTH") selectedPlan = Plan.GROWTH;
+    else if (requestedPlanStr === "BUSINESS") selectedPlan = Plan.BUSINESS;
+    else if (requestedPlanStr === "ENTERPRISE") selectedPlan = Plan.ENTERPRISE;
+
     // 2. Transactional creation: User, Workspace, Member, Usage, Subscription all commit together
     const { user, workspace } = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -68,7 +75,7 @@ export async function POST(request: Request) {
           name: wsName,
           slug,
           domain: website || null,
-          plan: Plan.STARTER,
+          plan: selectedPlan,
           settings: {
             accountType,
             industry,
@@ -100,7 +107,7 @@ export async function POST(request: Request) {
       await tx.subscription.create({
         data: {
           workspaceId: newWorkspace.id,
-          plan: Plan.STARTER,
+          plan: selectedPlan,
           status: "ACTIVE",
         },
       });

@@ -43,9 +43,24 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const totalSteps = 8;
 
-  // Step 2 state: Workspace
+  // Step 2 state: Workspace (pre-populated with user's real workspace)
   const [workspaceName, setWorkspaceName] = useState("SignalFlow Revenue Hub");
   const [workspaceDomain, setWorkspaceDomain] = useState("revenue.acmetech.io");
+
+  React.useEffect(() => {
+    let isMounted = true;
+    fetch("/api/v1/workspace")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.data?.name) setWorkspaceName(data.data.name);
+        if (data.data?.domain) setWorkspaceDomain(data.data.domain);
+      })
+      .catch((err) => console.warn("Failed to load workspace for onboarding:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Step 3 state: CSV Import
   const [csvData, setCsvData] = useState<CSVRow[]>([
