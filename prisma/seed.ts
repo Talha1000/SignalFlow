@@ -861,6 +861,117 @@ async function main() {
         },
       });
     }
+
+    // Realistic conversation threads in PostgreSQL for top accounts
+    if (l.company === "Acme Technologies") {
+      await prisma.activity.create({
+        data: {
+          workspaceId: workspace.id,
+          leadId: lead.id,
+          companyId: compId,
+          contactId: contactId,
+          type: ActivityType.EMAIL_SENT,
+          title: "Outreach: Prioritizing revenue signals at Acme Technologies",
+          description: "Hi Sarah, noticed your team exploring real-time customer signals. Would you be open to a 15-minute briefing on our tenant isolation architecture?",
+          metadata: {
+            recipient: "sarah.chen@acmetech.io",
+            subject: "Prioritizing revenue signals at Acme Technologies",
+            body: "Hi Sarah, noticed your team exploring real-time customer signals. Would you be open to a 15-minute briefing on our tenant isolation architecture?",
+          },
+          createdAt: new Date(now - 24 * 3600 * 1000),
+        },
+      });
+      await prisma.activity.create({
+        data: {
+          workspaceId: workspace.id,
+          leadId: lead.id,
+          companyId: compId,
+          contactId: contactId,
+          type: ActivityType.EMAIL_REPLY,
+          title: "Re: Prioritizing revenue signals at Acme Technologies",
+          description: "Hi Liam, thanks for reaching out. We are actually evaluating customer signal latency right now. Do you have time this Thursday at 2 PM PST?",
+          metadata: {
+            sender: "Sarah Chen",
+            subject: "Re: Prioritizing revenue signals at Acme Technologies",
+            body: "Hi Liam, thanks for reaching out. We are actually evaluating customer signal latency right now. Do you have time this Thursday at 2 PM PST?",
+            sentiment: "MEETING_REQUESTED",
+          },
+          createdAt: new Date(now - 14 * 60 * 1000),
+        },
+      });
+    } else if (l.company === "SecurityZero Corp") {
+      await prisma.activity.create({
+        data: {
+          workspaceId: workspace.id,
+          leadId: lead.id,
+          companyId: compId,
+          contactId: contactId,
+          type: ActivityType.EMAIL_SENT,
+          title: "Outreach: Questions on the SecurityZero evaluation?",
+          description: "Hi Victor, saw you tested our webhook endpoints today. Happy to answer questions or set up a dedicated sandbox.",
+          metadata: {
+            recipient: "vstone@securityzero.com",
+            subject: "Questions on the SecurityZero evaluation?",
+            body: "Hi Victor, saw you tested our webhook endpoints today. Happy to answer questions or set up a dedicated sandbox.",
+          },
+          createdAt: new Date(now - 3 * 3600 * 1000),
+        },
+      });
+      await prisma.activity.create({
+        data: {
+          workspaceId: workspace.id,
+          leadId: lead.id,
+          companyId: compId,
+          contactId: contactId,
+          type: ActivityType.EMAIL_REPLY,
+          title: "Re: Questions on the SecurityZero evaluation?",
+          description: "Maya, can you send over your SOC2 Type II report and verify if your webhooks support HMAC SHA256 signatures?",
+          metadata: {
+            sender: "Victor Stone",
+            subject: "Re: Questions on the SecurityZero evaluation?",
+            body: "Maya, can you send over your SOC2 Type II report and verify if your webhooks support HMAC SHA256 signatures?",
+            sentiment: "TECHNICAL_INQUIRY",
+          },
+          createdAt: new Date(now - 55 * 60 * 1000),
+        },
+      });
+    } else if (l.company === "PeakFlow Systems") {
+      await prisma.activity.create({
+        data: {
+          workspaceId: workspace.id,
+          leadId: lead.id,
+          companyId: compId,
+          contactId: contactId,
+          type: ActivityType.EMAIL_SENT,
+          title: "Outreach: Quick follow-up + technical benchmark",
+          description: "Hi Tobias, here is our recent benchmark comparing signal latency vs conversion rate.",
+          metadata: {
+            recipient: "tmeyer@peakflow.tech",
+            subject: "Quick follow-up + technical benchmark",
+            body: "Hi Tobias, here is our recent benchmark comparing signal latency vs conversion rate.",
+          },
+          createdAt: new Date(now - 48 * 3600 * 1000),
+        },
+      });
+      await prisma.activity.create({
+        data: {
+          workspaceId: workspace.id,
+          leadId: lead.id,
+          companyId: compId,
+          contactId: contactId,
+          type: ActivityType.EMAIL_REPLY,
+          title: "Re: Quick follow-up + technical benchmark",
+          description: "We like the product but we are currently locked into a contract through November. What does migration look like?",
+          metadata: {
+            sender: "Tobias Meyer",
+            subject: "Re: Quick follow-up + technical benchmark",
+            body: "We like the product but we are currently locked into a contract through November. What does migration look like?",
+            sentiment: "OBJECTION",
+          },
+          createdAt: new Date(now - 3 * 3600 * 1000),
+        },
+      });
+    }
   }
 
   // 9. Sequences (3 Cadences)

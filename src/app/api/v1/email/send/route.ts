@@ -15,6 +15,7 @@ const SendEmailSchema = z.object({
   to: z.string().email("Invalid recipient email address"),
   subject: z.string().min(1, "Subject is required").max(255),
   body: z.string().min(1, "Email body is required").max(10000),
+  allowLocalRecord: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       return apiError(`Validation failed: ${issue}`, 400, "VALIDATION_FAILED");
     }
 
-    const { leadId, to, subject, body } = parseResult.data;
+    const { leadId, to, subject, body, allowLocalRecord } = parseResult.data;
 
     let lead: any = null;
     if (leadId) {
@@ -61,6 +62,16 @@ export async function POST(request: Request) {
       if (!lead) {
         return apiError("Lead not found or access denied", 404, "NOT_FOUND");
       }
+    } else {
+      // Attempt to link to contact/lead by recipient email if leadId was omitted
+      lead = await prisma.lead.findFirst({
+        where: {
+          workspaceId: caller.workspaceId,
+          contact: { email: { equals: to, mode: "insensitive" } },
+          deletedAt: null,
+        },
+        include: { company: true, contact: true },
+      });
     }
 
     // Pre-flight monthly email plan quota check
@@ -75,6 +86,43 @@ export async function POST(request: Request) {
 
     const emailProvider = getEmailProvider();
     if (!emailProvider.isConfigured()) {
+      if (allowLocalRecord) {
+        // Record truthfully in PostgreSQL as local sandbox activity
+        const activity = await prisma.activity.create({
+          data: {
+            workspaceId: caller.workspaceId,
+            leadId: lead?.id || null,
+            companyId: lead?.companyId || null,
+            contactId: lead?.contactId || null,
+            type: ActivityType.EMAIL_SENT,
+            title: `Outreach Sent: ${subject}`,
+            description: body,
+            metadata: {
+              recipient: to,
+              subject,
+              body,
+              provider: "local_sandbox",
+              status: "RECORDED_LOCALLY",
+              recordedAt: new Date().toISOString(),
+            },
+          },
+        });
+
+        if (lead?.id) {
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: { lastActivityAt: new Date() },
+          });
+        }
+
+        return apiSuccess({
+          status: "RECORDED_LOCALLY",
+          message: "Outbound email provider is not configured (RESEND_API_KEY). Message was recorded to the lead's database timeline.",
+          activityId: activity.id,
+          provider: "local_sandbox",
+        });
+      }
+
       return apiError(
         "Outbound email provider is not configured. Please set RESEND_API_KEY in environment variables to deliver live prospect outreach.",
         503,
