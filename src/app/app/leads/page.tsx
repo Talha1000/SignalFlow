@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
   const session = await getSession();
-  const leads = await getLeadsSafe(session?.workspaceId);
-  return <LeadsListClient initialLeads={leads as any} />;
-}
+  const rawLeads = await getLeadsSafe(session?.workspaceId);
 
+  // Clean serialization to ensure no RSC date/prototype mismatches
+  const safeLeads = JSON.parse(JSON.stringify(rawLeads || []));
+
+  return <LeadsListClient initialLeads={safeLeads} />;
+}

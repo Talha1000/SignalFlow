@@ -15,23 +15,23 @@ import {
 } from "lucide-react";
 import { IntentBadge, ScoreBadge, StageBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
 import { EmailComposerModal } from "@/components/email/EmailComposerModal";
 
 interface LeadRow {
   id: string;
-  score: number;
-  intentLevel: string;
-  stage: string;
-  dealValue: number;
-  source: string;
-  lastActivityAt: string | Date;
-  company?: { name: string; domain?: string | null; industry?: string | null } | null;
-  contact?: { firstName: string; lastName: string; email: string; title?: string | null } | null;
-  owner?: { name: string } | null;
+  score?: number;
+  intentLevel?: string;
+  intent?: string;
+  stage?: string;
+  dealValue?: number;
+  source?: string;
+  lastActivityAt?: string | Date;
+  company?: { name?: string; domain?: string | null; industry?: string | null } | null;
+  contact?: { firstName?: string; lastName?: string; email?: string; title?: string | null; name?: string } | null;
+  owner?: { name?: string } | null;
 }
 
-export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
+export function LeadsListClient({ initialLeads = [] }: { initialLeads?: LeadRow[] }) {
   const [search, setSearch] = useState("");
   const [intentFilter, setIntentFilter] = useState("ALL");
   const [stageFilter, setStageFilter] = useState("ALL");
@@ -46,33 +46,58 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
     score?: number;
   } | null>(null);
 
-  const filtered = initialLeads
-    .filter((l) => {
-      const matchSearch =
-        search === "" ||
-        (l.company?.name || "").toLowerCase().includes(search.toLowerCase()) ||
-        (l.contact?.firstName || "").toLowerCase().includes(search.toLowerCase()) ||
-        (l.contact?.lastName || "").toLowerCase().includes(search.toLowerCase()) ||
-        (l.contact?.email || "").toLowerCase().includes(search.toLowerCase());
+  const safeLeads = Array.isArray(initialLeads) ? initialLeads : [];
 
-      const matchIntent = intentFilter === "ALL" || l.intentLevel === intentFilter;
-      const matchStage = stageFilter === "ALL" || l.stage === stageFilter;
+  const filtered = safeLeads
+    .filter((l) => {
+      if (!l) return false;
+      const companyName = l.company?.name || "";
+      const contactFirst = l.contact?.firstName || "";
+      const contactLast = l.contact?.lastName || "";
+      const contactEmail = l.contact?.email || "";
+      const query = (search || "").toLowerCase().trim();
+
+      const matchSearch =
+        query === "" ||
+        companyName.toLowerCase().includes(query) ||
+        contactFirst.toLowerCase().includes(query) ||
+        contactLast.toLowerCase().includes(query) ||
+        contactEmail.toLowerCase().includes(query);
+
+      const level = l.intentLevel || l.intent || "COLD";
+      const matchIntent = intentFilter === "ALL" || level === intentFilter;
+      const stage = l.stage || "NEW";
+      const matchStage = stageFilter === "ALL" || stage === stageFilter;
 
       return matchSearch && matchIntent && matchStage;
     })
     .sort((a, b) => {
-      if (sortField === "score") return b.score - a.score;
-      if (sortField === "value") return b.dealValue - a.dealValue;
-      return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
+      if (!a && !b) return 0;
+      if (!a) return 1;
+      if (!b) return -1;
+      if (sortField === "score") return (b.score ?? 0) - (a.score ?? 0);
+      if (sortField === "value") return (b.dealValue ?? 0) - (a.dealValue ?? 0);
+      const timeB = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+      const timeA = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+      return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
     });
 
   const handleExportCSV = () => {
     const headers = "Name,Company,Email,Title,Score,Intent,Stage,Deal Value\n";
     const rows = filtered
-      .map(
-        (l) =>
-          `"${l.contact?.firstName || ""} ${l.contact?.lastName || ""}","${l.company?.name || ""}","${l.contact?.email || ""}","${l.contact?.title || ""}",${l.score},${l.intentLevel},${l.stage},${l.dealValue}`
-      )
+      .map((l) => {
+        const contactFirst = l.contact?.firstName || "";
+        const contactLast = l.contact?.lastName || "";
+        const name = `${contactFirst} ${contactLast}`.trim() || l.contact?.name || "Unknown";
+        const company = l.company?.name || "";
+        const email = l.contact?.email || "";
+        const title = l.contact?.title || "";
+        const score = l.score ?? 0;
+        const intent = l.intentLevel || l.intent || "COLD";
+        const stage = l.stage || "NEW";
+        const dealValue = l.dealValue ?? 0;
+        return `"${name}","${company}","${email}","${title}",${score},${intent},${stage},${dealValue}`;
+      })
       .join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -186,18 +211,27 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                 </tr>
               ) : (
                 filtered.map((lead) => {
-                  const contactName = lead.contact
-                    ? `${lead.contact.firstName} ${lead.contact.lastName}`
-                    : "Unknown";
+                  if (!lead) return null;
+                  const contactFirst = lead.contact?.firstName || "";
+                  const contactLast = lead.contact?.lastName || "";
+                  const contactName =
+                    `${contactFirst} ${contactLast}`.trim() ||
+                    lead.contact?.name ||
+                    lead.contact?.email ||
+                    "Unknown Prospect";
                   const companyName = lead.company?.name || "Direct Lead";
+                  const intentLevel = lead.intentLevel || lead.intent || "COLD";
+                  const stage = lead.stage || "NEW";
+                  const dealValue = Number(lead.dealValue) || 0;
+                  const score = Number(lead.score) || 0;
 
                   return (
                     <tr
-                      key={lead.id}
+                      key={lead.id || Math.random().toString()}
                       className="hover:bg-[#252a2b]/60 light:hover:bg-[#f0f2f3] transition-colors group"
                     >
                       <td className="p-3.5">
-                        <ScoreBadge score={lead.score} />
+                        <ScoreBadge score={score} />
                       </td>
                       <td className="p-3.5">
                         <Link
@@ -217,15 +251,15 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <IntentBadge level={lead.intentLevel} />
+                        <IntentBadge level={intentLevel} />
                       </td>
                       <td className="p-3.5">
-                        <StageBadge stage={lead.stage} />
+                        <StageBadge stage={stage} />
                       </td>
                       <td className="p-3.5 font-mono text-white light:text-[#121212]">
-                        {lead.dealValue > 0 ? (
+                        {dealValue > 0 ? (
                           <span className="text-emerald-400 light:text-emerald-700 font-semibold">
-                            ${lead.dealValue.toLocaleString()}
+                            ${dealValue.toLocaleString()}
                           </span>
                         ) : (
                           <span className="text-slate-400 light:text-[#787e82]">—</span>
@@ -243,7 +277,7 @@ export function LeadsListClient({ initialLeads }: { initialLeads: LeadRow[] }) {
                               email: lead.contact?.email || "lead@company.com",
                               company: companyName,
                               title: lead.contact?.title || undefined,
-                              score: lead.score,
+                              score: score,
                             })
                           }
                           className="p-1.5 rounded-lg bg-[#252a2b] light:bg-[#f0f2f3] hover:bg-[#38b6ff]/20 light:hover:bg-[#0284c7]/20 text-slate-400 light:text-[#787e82] hover:text-[#38b6ff] light:hover:text-[#0284c7] transition-colors"

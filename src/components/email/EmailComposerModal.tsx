@@ -24,17 +24,22 @@ interface EmailComposerProps {
 }
 
 export function EmailComposerModal({ isOpen, onClose, lead }: EmailComposerProps) {
-  const [subject, setSubject] = useState(
-    lead ? `Prioritizing revenue signals at ${lead.company}` : "Quick follow-up"
-  );
-  const [body, setBody] = useState(
-    lead
-      ? `Hi ${lead.name.split(" ")[0]},\n\nI noticed your team at ${lead.company} has been evaluating our real-time intent prioritization and webhook architecture.\n\nWould you be open to a 15-minute briefing this Thursday?\n\nBest regards,\nLiam Vance\nSignalFlow Sales Team`
-      : ""
-  );
+  const [subject, setSubject] = useState("Quick follow-up");
+  const [body, setBody] = useState("");
   const [tone, setTone] = useState<"consultative" | "direct" | "technical" | "professional">("consultative");
   const [isAiRewriting, setIsAiRewriting] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+
+  React.useEffect(() => {
+    if (lead) {
+      const firstName = lead.name?.split(" ")[0] || "there";
+      const company = lead.company || "your team";
+      setSubject(`Prioritizing revenue signals at ${company}`);
+      setBody(
+        `Hi ${firstName},\n\nI noticed your team at ${company} has been evaluating our real-time intent prioritization and webhook architecture.\n\nWould you be open to a 15-minute briefing this Thursday?\n\nBest regards,\nLiam Vance\nSignalFlow Sales Team`
+      );
+    }
+  }, [lead]);
 
   const [generationMeta, setGenerationMeta] = useState<{ source: "ai" | "template"; provider: string | null } | null>(null);
   const [isSending, setIsSending] = useState(false);
