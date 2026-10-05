@@ -115,19 +115,32 @@ src/
 
 MIT
 
-## Deploying to Vercel (Free Tier)
+## Running & Deploying Locally (Localhost)
 
-1. **Create a free PostgreSQL database** (Supabase, Neon, Railway, etc.) and obtain its connection string, e.g.:
+1. **Configure Environment Variables**:
+   Ensure `.env` contains your PostgreSQL connection string and secrets:
+   ```env
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/signalflow?schema=public"
+   JWT_SECRET="your-jwt-secret-key-at-least-32-chars"
    ```
-   postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public
-   ```
-2. **Add the secret to Vercel**:
-   - Go to **Vercel Dashboard → Settings → Environment Variables**.
-   - Add a new secret named **`database_url`** with the connection string.
-   - Vercel will expose it as `DATABASE_URL` for the app (as defined in `vercel.json`).
-3. **Deploy**:
-   - Link the GitHub repository to Vercel (if not already linked).
-   - Click **Deploy** or push a new commit to trigger a build.
-   - The app will start with the database connection automatically configured.
 
-> **Note:** The local `.env` file is only for local development. Do **not** commit actual credentials.
+2. **Database Push & Seed**:
+   ```bash
+   npx prisma db push
+   npx tsx prisma/seed.ts
+   ```
+
+3. **Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+4. **Production Build & Local Server**:
+   ```bash
+   npm run build
+   npm run start
+   ```
+   The optimized production server will be live on [http://localhost:3000](http://localhost:3000).
+
+> **Note:** The `.env` file is for local development and deployment. Keep production credentials secure and never commit private keys.

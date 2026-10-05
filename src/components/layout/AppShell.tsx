@@ -189,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-white/10 light:border-black/10 bg-[#1e2224] light:bg-[#f0f2f3] flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <img
-              src={currentUser?.avatarUrl || `https://avatar.vercel.sh/${encodeURIComponent(currentUser?.name || "user")}`}
+              src={currentUser?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || "user")}&background=38b6ff&color=121212`}
               alt={currentUser?.name || "User"}
               className="h-8 w-8 rounded-full border border-white/15 light:border-black/15 shrink-0"
             />

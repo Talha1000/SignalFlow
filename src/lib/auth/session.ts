@@ -153,7 +153,7 @@ export async function getCurrentUserAndWorkspace() {
         id: session?.userId || "user-demo",
         email: session?.email || "demo@signalflow.io",
         name: session?.name || "Demo User",
-        avatarUrl: "https://avatar.vercel.sh/demo",
+        avatarUrl: "https://ui-avatars.com/api/?name=Demo&background=38b6ff&color=121212",
         memberships: [],
       },
       workspace: {

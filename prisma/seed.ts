@@ -7,8 +7,7 @@ const prisma = new PrismaClient();
 async function main() {
   const isProd =
     process.env.NODE_ENV === "production" ||
-    process.env.APP_ENV === "production" ||
-    process.env.VERCEL_ENV === "production";
+    process.env.APP_ENV === "production";
 
   if (isProd) {
     if (process.env.ALLOW_PRODUCTION_SEED !== "true") {
@@ -66,7 +65,7 @@ async function main() {
       email: "alex.morgan@signalflow.io",
       name: "Alex Morgan",
       passwordHash,
-      avatarUrl: "https://avatar.vercel.sh/alex",
+      avatarUrl: "https://ui-avatars.com/api/?name=Alex+Morgan&background=38b6ff&color=121212",
     },
   });
 
@@ -75,7 +74,7 @@ async function main() {
       email: "sarah.connor@signalflow.io",
       name: "Sarah Connor",
       passwordHash,
-      avatarUrl: "https://avatar.vercel.sh/sarah",
+      avatarUrl: "https://ui-avatars.com/api/?name=Sarah+Connor&background=f59e0b&color=121212",
     },
   });
 
@@ -84,7 +83,7 @@ async function main() {
       email: "liam.vance@signalflow.io",
       name: "Liam Vance",
       passwordHash,
-      avatarUrl: "https://avatar.vercel.sh/liam",
+      avatarUrl: "https://ui-avatars.com/api/?name=Liam+Vance&background=10b981&color=121212",
     },
   });
 
@@ -93,7 +92,7 @@ async function main() {
       email: "maya.patel@signalflow.io",
       name: "Maya Patel",
       passwordHash,
-      avatarUrl: "https://avatar.vercel.sh/maya",
+      avatarUrl: "https://ui-avatars.com/api/?name=Maya+Patel&background=8b5cf6&color=121212",
     },
   });
 

@@ -40,7 +40,7 @@ export interface RateLimitStoreAdapter {
 
 let customStoreAdapter: RateLimitStoreAdapter | null = null;
 
-// Auto-detect production distributed store from environment (Upstash Redis or Vercel KV)
+// Auto-detect production distributed store from environment (Upstash Redis or Redis-compatible store)
 if (
   typeof process !== "undefined" &&
   process.env &&

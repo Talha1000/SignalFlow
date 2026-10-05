@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "avatar.vercel.sh",
+        hostname: "ui-avatars.com",
       },
     ],
   },

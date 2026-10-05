@@ -63,7 +63,7 @@ export async function POST(request: Request) {
           email: cleanEmail,
           name,
           passwordHash,
-          avatarUrl: `https://avatar.vercel.sh/${encodeURIComponent(name)}`,
+          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=38b6ff&color=121212`,
         },
       });
 
